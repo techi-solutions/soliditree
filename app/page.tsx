@@ -50,7 +50,7 @@ export default function LandingPage() {
     { id: "10", name: "Page 10", description: "This is the tenth page" },
   ]);
 
-  const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
+  // const [pageToDelete, setPageToDelete] = useState<Page | null>(null);
 
   const handleContractAddressChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -62,7 +62,7 @@ export default function LandingPage() {
 
   const handleDeletePage = (page: Page) => {
     setExistingPages((prevPages) => prevPages.filter((p) => p.id !== page.id));
-    setPageToDelete(null);
+    // setPageToDelete(null);
   };
 
   return (

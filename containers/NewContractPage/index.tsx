@@ -44,7 +44,7 @@ export default function NewContractPage({
   const [description, setDescription] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
   const [functions, setFunctions] = useState<ContractFunction[]>([]);
-  const [generatedPageAddress, setGeneratedPageAddress] = useState("");
+  //   const [generatedPageAddress, setGeneratedPageAddress] = useState("");
   const router = useRouter();
 
   //   const handleChainChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
@@ -250,7 +250,7 @@ export default function NewContractPage({
         Create Page
       </Button>
 
-      {generatedPageAddress && (
+      {/* {generatedPageAddress && (
         <div className="mt-4">
           <h2 className="text-xl font-semibold">Generated Page Address:</h2>
           <a
@@ -260,7 +260,7 @@ export default function NewContractPage({
             {generatedPageAddress}
           </a>
         </div>
-      )}
+      )} */}
     </div>
   );
 }

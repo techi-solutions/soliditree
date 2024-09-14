@@ -25,10 +25,10 @@ createWeb3Modal({
   enableOnramp: false,
   themeMode: "dark",
   themeVariables: {
-    // "--w3m-font-family": "var(--font-geist-sans)",
-    // "--w3m-accent": "#000000",
+    "--w3m-accent": "hsl(var(--primary))",
     "--w3m-border-radius-master": "0.5rem",
     "--w3m-font-size-master": "1rem",
+    "--w3m-color-mix": "white",
   },
 });
 

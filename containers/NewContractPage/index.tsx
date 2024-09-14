@@ -12,16 +12,11 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { ChevronDown, ChevronUp, Globe, Smile } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { useChainId } from "wagmi";
 
 interface ContractFunction {
   id: string;
@@ -29,25 +24,32 @@ interface ContractFunction {
   visible: boolean;
 }
 
-export default function NewContractPage() {
-  const [chainId, setChainId] = useState("1");
-  const [contractAddress, setContractAddress] = useState("");
+const chains = [
+  { id: 1, name: "Ethereum", icon: "/assets/chains/ethereum.png" },
+  { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
+  { id: 8453, name: "Base", icon: "/assets/chains/base.png" },
+  { id: 10, name: "Optimism", icon: "/assets/chains/optimism.png" },
+  { id: 100, name: "Gnosis Chain", icon: "/assets/chains/gnosis.png" },
+  { id: 42220, name: "Celo", icon: "/assets/chains/celo.png" },
+];
+
+export default function NewContractPage({
+  contractAddress,
+}: {
+  contractAddress: string;
+}) {
+  const chainId = useChainId();
   const [title, setTitle] = useState("");
   const [icon, setIcon] = useState("");
   const [description, setDescription] = useState("");
   const [websiteLink, setWebsiteLink] = useState("");
   const [functions, setFunctions] = useState<ContractFunction[]>([]);
   const [generatedPageAddress, setGeneratedPageAddress] = useState("");
+  const router = useRouter();
 
   //   const handleChainChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
   //     setChainId(event.target.value);
   //   };
-
-  const handleContractAddressChange = (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    setContractAddress(event.target.value);
-  };
 
   const fetchABI = async () => {
     // Placeholder function to fetch ABI
@@ -79,108 +81,54 @@ export default function NewContractPage() {
 
   const handleCreate = () => {
     // Placeholder function to generate page address
-    // In a real implementation, this would make an API call to create the page
     console.log("Creating page for", contractAddress);
-    setGeneratedPageAddress(`https://example.com/contracts/${contractAddress}`);
+    const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`; // TODO: use generated page address
+    router.push(
+      `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
+        pageAddress
+      )}`
+    );
   };
 
+  // Update chainId when the network changes
+  //   useEffect(() => {
+  //     if (chainId) {
+  //       setChainId(chainId.toString());
+  //     }
+  //   }, [chainId]);
+
+  console.log("chainId", chainId);
+  console.log("contractAddress", contractAddress);
+
+  const supportedChain = chains.some((chain) => chain.id === chainId);
+
   return (
-    <div className="container mx-auto p-4 space-y-6 bg-white text-black max-w-3xl">
+    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl">
       <h1 className="text-2xl font-bold mb-4">New Contract Page</h1>
 
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="chain">Chain</Label>
-          <Select value={chainId} onValueChange={setChainId}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select a chain" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="1">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/ethereum.png"
-                    alt="Ethereum logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Ethereum
-                </div>
-              </SelectItem>
-              <SelectItem value="137">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/polygon.png"
-                    alt="Polygon logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Polygon
-                </div>
-              </SelectItem>
-              <SelectItem value="8453">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/base.png"
-                    alt="Base logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Base
-                </div>
-              </SelectItem>
-              <SelectItem value="10">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/optimism.png"
-                    alt="Optimism logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Optimism
-                </div>
-              </SelectItem>
-              <SelectItem value="100">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/gnosis.png"
-                    alt="Gnosis Chain logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Gnosis Chain
-                </div>
-              </SelectItem>
-              <SelectItem value="42220">
-                <div className="flex items-center">
-                  <Image
-                    src="/assets/chains/celo.png"
-                    alt="Celo logo"
-                    width={20}
-                    height={20}
-                    className="mr-2 rounded-full"
-                  />
-                  Celo
-                </div>
-              </SelectItem>
-            </SelectContent>
-          </Select>
+        <div className="flex flex-col">
+          <div className="flex items-center justify-between">
+            <Label htmlFor="chain" className="text-xl text-bold">
+              Chain
+            </Label>
+            <Button className="rounded-full p-0 h-auto w-auto">
+              <w3m-network-button />
+            </Button>
+          </div>
+          {!supportedChain && (
+            <div className="text-red-500">
+              Unsupported chain. Please select a supported chain.
+            </div>
+          )}
         </div>
 
         <div>
-          <Label htmlFor="contractAddress">Contract Address</Label>
+          <Label htmlFor="contractAddress" className="text-xl text-bold">
+            Contract Address
+          </Label>
           <div className="flex space-x-2">
-            <Input
-              id="contractAddress"
-              value={contractAddress}
-              onChange={handleContractAddressChange}
-              placeholder="0x..."
-            />
+            <p className="p-2 rounded-md flex-grow">{contractAddress}</p>
             <Button onClick={fetchABI}>Fetch ABI</Button>
           </div>
         </div>
@@ -243,7 +191,7 @@ export default function NewContractPage() {
                         ref={provided.innerRef}
                         {...provided.draggableProps}
                         {...provided.dragHandleProps}
-                        className="flex items-center justify-between p-2 bg-gray-100 rounded"
+                        className="flex items-center justify-between p-2 bg-gray-100 text-black rounded"
                       >
                         <span>{func.name}</span>
                         <div className="space-x-2">

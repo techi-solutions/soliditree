@@ -2,6 +2,10 @@ import { Analytics } from "@vercel/analytics/react";
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
+import { cookieToInitialState } from "wagmi";
+import { headers } from "next/headers";
+import { config } from "@/services/walletConnect/config";
+import Web3ModalProvider from "@/services/walletConnect/context";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -24,12 +28,15 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const initialState = cookieToInitialState(config, headers().get("cookie"));
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white`}
       >
-        {children}
+        <Web3ModalProvider initialState={initialState}>
+          {children}
+        </Web3ModalProvider>
         <Analytics />
       </body>
     </html>

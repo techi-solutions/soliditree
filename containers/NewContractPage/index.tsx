@@ -1,6 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DragDropContext,
   Droppable,
@@ -13,16 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ChevronDown, ChevronUp, Globe, Smile } from "lucide-react";
+import { Globe, Smile } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
-
-interface ContractFunction {
-  id: string;
-  name: string;
-  visible: boolean;
-}
+import ContractPagesABI from "@/abi/ContractPages.abi.json";
 
 const chains = [
   { id: 1, name: "Ethereum", icon: "/assets/chains/ethereum.png" },
@@ -33,34 +31,80 @@ const chains = [
   { id: 42220, name: "Celo", icon: "/assets/chains/celo.png" },
 ];
 
+const formSchema = z.object({
+  title: z.string().min(1, "Title is required"),
+  description: z.string().min(1, "Description is required"),
+  icon: z.instanceof(File).optional(),
+  website: z.string().url().optional(),
+});
+
+export type CreatePageFormData = z.infer<typeof formSchema>;
+
 export default function NewContractPage({
   contractAddress,
+  abi,
+  createPage,
 }: {
   contractAddress: string;
+  abi: typeof ContractPagesABI.abi;
+  createPage: (formData: FormData) => Promise<string>;
 }) {
+  console.log("abi", abi);
   const chainId = useChainId();
-  const [title, setTitle] = useState("");
-  const [icon, setIcon] = useState("");
-  const [description, setDescription] = useState("");
-  const [websiteLink, setWebsiteLink] = useState("");
-  const [functions, setFunctions] = useState<ContractFunction[]>([]);
+  const [functions, setFunctions] = useState(
+    abi.filter((v) => v.type === "function")
+  );
   //   const [generatedPageAddress, setGeneratedPageAddress] = useState("");
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [iconFile, setIconFile] = useState<File | null>(null);
 
-  //   const handleChainChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-  //     setChainId(event.target.value);
-  //   };
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<CreatePageFormData>({
+    resolver: zodResolver(formSchema),
+  });
 
-  const fetchABI = async () => {
-    // Placeholder function to fetch ABI
-    // In a real implementation, this would make an API call to fetch the ABI
-    console.log("Fetching ABI for", contractAddress);
-    // Simulating ABI fetch
-    setFunctions([
-      { id: "1", name: "transfer", visible: true },
-      { id: "2", name: "balanceOf", visible: true },
-      { id: "3", name: "approve", visible: true },
-    ]);
+  const onSubmit = async (data: CreatePageFormData) => {
+    const formData = new FormData();
+
+    // Append form fields to FormData
+    Object.entries(data).forEach(([key, value]) => {
+      formData.append(key, value as string);
+    });
+
+    // Append the file if it exists
+    if (iconFile) {
+      formData.append("icon", iconFile);
+    }
+
+    try {
+      const hash = await createPage(formData);
+      console.log("hash", hash);
+      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`;
+      router.push(
+        `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
+          pageAddress
+        )}`
+      );
+    } catch (error) {
+      console.error("Error creating page:", error);
+      // Handle error (e.g., show error message to user)
+    }
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && file.type === "image/svg+xml") {
+      setIconFile(file);
+    } else {
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      setIconFile(null);
+    }
   };
 
   const onDragEnd = (result: DropResult) => {
@@ -71,24 +115,26 @@ export default function NewContractPage({
     setFunctions(items);
   };
 
-  const toggleFunctionVisibility = (id: string) => {
-    setFunctions(
-      functions.map((func) =>
-        func.id === id ? { ...func, visible: !func.visible } : func
-      )
-    );
-  };
+  //   const toggleFunctionVisibility = (id: string) => {
+  //     setFunctions(
+  //       functions.map((func) =>
+  //         func.id === id ? { ...func, visible: !func.visible } : func
+  //       )
+  //     );
+  //   };
 
-  const handleCreate = () => {
-    // Placeholder function to generate page address
-    console.log("Creating page for", contractAddress);
-    const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`; // TODO: use generated page address
-    router.push(
-      `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
-        pageAddress
-      )}`
-    );
-  };
+  //   const handleCreate = async () => {
+  //     // Placeholder function to generate page address
+  //     await createPage({ hello: "world" });
+
+  //     console.log("Creating page for", contractAddress);
+  //     const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`; // TODO: use generated page address
+  //     router.push(
+  //       `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
+  //         pageAddress
+  //       )}`
+  //     );
+  //   };
 
   // Update chainId when the network changes
   //   useEffect(() => {
@@ -129,50 +175,52 @@ export default function NewContractPage({
           </Label>
           <div className="flex space-x-2">
             <p className="p-2 rounded-md flex-grow">{contractAddress}</p>
-            <Button onClick={fetchABI}>Fetch ABI</Button>
+            {/* <Button onClick={fetchABI}>Fetch ABI</Button> */}
           </div>
         </div>
       </div>
 
-      <div className="space-y-4">
-        <h2 className="text-xl font-semibold">Customization</h2>
-
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
-          <Input
-            id="title"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <Label htmlFor="icon">Icon (favicon)</Label>
-          <Input
-            id="icon"
-            value={icon}
-            onChange={(e) => setIcon(e.target.value)}
-          />
+          <Input id="title" {...register("title")} />
+          {errors.title && (
+            <p className="text-red-500">{errors.title.message}</p>
+          )}
         </div>
 
         <div>
           <Label htmlFor="description">Description</Label>
-          <Textarea
-            id="description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
+          <Textarea id="description" {...register("description")} />
+          {errors.description && (
+            <p className="text-red-500">{errors.description.message}</p>
+          )}
         </div>
 
         <div>
-          <Label htmlFor="websiteLink">Website Link</Label>
+          <Label htmlFor="icon">Icon (SVG only) (optional)</Label>
           <Input
-            id="websiteLink"
-            value={websiteLink}
-            onChange={(e) => setWebsiteLink(e.target.value)}
+            id="icon"
+            type="file"
+            accept=".svg"
+            ref={fileInputRef}
+            onChange={handleFileChange}
           />
+          {errors.icon && <p className="text-red-500">{errors.icon.message}</p>}
         </div>
-      </div>
+
+        <div>
+          <Label htmlFor="website">Website Link (optional)</Label>
+          <Input id="website" {...register("website")} />
+          {errors.website && (
+            <p className="text-red-500">{errors.website.message}</p>
+          )}
+        </div>
+
+        <Button type="submit" className="mt-4">
+          Create Page
+        </Button>
+      </form>
 
       <div>
         <h2 className="text-xl font-semibold mb-2">Functions</h2>
@@ -185,7 +233,11 @@ export default function NewContractPage({
                 className="space-y-2"
               >
                 {functions.map((func, index) => (
-                  <Draggable key={func.id} draggableId={func.id} index={index}>
+                  <Draggable
+                    key={func.name}
+                    draggableId={func.name ?? `${index}`}
+                    index={index}
+                  >
                     {(provided: DraggableProvided) => (
                       <li
                         ref={provided.innerRef}
@@ -195,7 +247,7 @@ export default function NewContractPage({
                       >
                         <span>{func.name}</span>
                         <div className="space-x-2">
-                          <Button
+                          {/* <Button
                             variant="outline"
                             size="icon"
                             onClick={() => toggleFunctionVisibility(func.id)}
@@ -206,7 +258,7 @@ export default function NewContractPage({
                             ) : (
                               <ChevronDown className="h-4 w-4" />
                             )}
-                          </Button>
+                          </Button> */}
                           <Button
                             variant="outline"
                             size="icon"
@@ -245,10 +297,6 @@ export default function NewContractPage({
           </Droppable>
         </DragDropContext>
       </div>
-
-      <Button onClick={handleCreate} className="mt-4">
-        Create Page
-      </Button>
 
       {/* {generatedPageAddress && (
         <div className="mt-4">

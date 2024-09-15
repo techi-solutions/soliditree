@@ -2,6 +2,25 @@ import { createPublicClient, getContract, http, PublicClient } from "viem";
 import { Chain, mainnet } from "viem/chains";
 import ContractPagesABI from "@/abi/ContractPages.abi.json";
 
+export interface ContractPageFunction {
+  name: string;
+  inputs: {
+    name: string;
+    type: string;
+  }[];
+  outputs: {
+    name: string;
+    type: string;
+  }[];
+}
+export interface ContractPage {
+  title: string;
+  description: string;
+  website?: string;
+  icon?: string;
+  functions: ContractPageFunction[];
+}
+
 export class ContractPagesService {
   private client: PublicClient;
   private contract = () =>

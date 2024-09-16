@@ -1,5 +1,11 @@
-import { createPublicClient, getContract, http, PublicClient } from "viem";
-import { Chain, mainnet } from "viem/chains";
+import {
+  Chain,
+  createPublicClient,
+  getContract,
+  http,
+  PublicClient,
+} from "viem";
+import { gnosis } from "viem/chains";
 import ContractPagesABI from "@/abi/ContractPages.abi.json";
 
 export interface ContractPageFunction {
@@ -33,12 +39,20 @@ export class ContractPagesService {
   constructor(
     private readonly rpcUrl: string,
     private readonly contractAddress: string,
-    private readonly chain: Chain = mainnet
+    private readonly chain: Chain = gnosis
   ) {
     this.client = createPublicClient({
       chain: this.chain,
       transport: http(this.rpcUrl),
     });
+  }
+
+  async contractExists() {
+    const result = await this.client.getCode({
+      address: this.contractAddress as `0x${string}`,
+    });
+    console.log("result", result);
+    return result !== "0x" && !!result;
   }
 
   async getContractAddress(pageId: string) {

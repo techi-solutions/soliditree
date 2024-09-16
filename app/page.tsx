@@ -78,9 +78,12 @@ export default function LandingPage() {
           />
         </div>
         <h1 className="text-5xl font-extrabold mb-6 tracking-tight">
-          Smart Contract UI Generator
+          dInterface
         </h1>
-        <p className="text-xl mb-8 text-purple-200">
+        <h2 className="text-2xl mb-6 tracking-tight">
+          Smart Contract UI Generator
+        </h2>
+        <p className="text-xl mb-8">
           Create beautiful and functional user interfaces for your smart
           contracts with just a few clicks. No coding required.
         </p>

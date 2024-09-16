@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -16,14 +16,16 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Globe, Smile } from "lucide-react";
+import { ExternalLink, Globe, ScrollTextIcon, Smile } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
 import ContractPagesABI from "@/abi/ContractPages.abi.json";
+import { Network } from "@/constants/networks";
+import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import { cn } from "@/lib/utils";
 
 const chains = [
-  { id: 1, name: "Ethereum", icon: "/assets/chains/ethereum.png" },
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
   { id: 8453, name: "Base", icon: "/assets/chains/base.png" },
   { id: 10, name: "Optimism", icon: "/assets/chains/optimism.png" },
@@ -32,7 +34,7 @@ const chains = [
 ];
 
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required"),
+  title: z.string().min(1, "Title is required").default("My Page"),
   description: z.string().min(1, "Description is required"),
   icon: z.instanceof(File).optional(),
   website: z.string().url().optional(),
@@ -41,16 +43,21 @@ const formSchema = z.object({
 export type CreatePageFormData = z.infer<typeof formSchema>;
 
 export default function NewContractPage({
+  chainId,
+  network,
   contractAddress,
-  abi,
+  exists,
+  abi = [],
   createPage,
 }: {
+  chainId: number;
+  network: Network;
   contractAddress: string;
-  abi: typeof ContractPagesABI.abi;
+  exists: boolean;
+  abi: typeof ContractPagesABI.abi | undefined;
   createPage: (formData: FormData) => Promise<string>;
 }) {
-  console.log("abi", abi);
-  const chainId = useChainId();
+  const selectedChainId = useChainId();
   const [functions, setFunctions] = useState(
     abi.filter((v) => v.type === "function")
   );
@@ -58,6 +65,12 @@ export default function NewContractPage({
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
+
+  useEffect(() => {
+    if (selectedChainId !== chainId) {
+      router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
+    }
+  }, [selectedChainId, chainId, router, contractAddress]);
 
   const {
     register,
@@ -143,6 +156,15 @@ export default function NewContractPage({
   //     }
   //   }, [chainId]);
 
+  const handleInspectContract = () => {
+    if (!exists) {
+      return;
+    }
+
+    // open new tab in block explorer
+    window.open(`${network.explorer}/address/${contractAddress}`, "_blank");
+  };
+
   console.log("chainId", chainId);
   console.log("contractAddress", contractAddress);
 
@@ -173,9 +195,39 @@ export default function NewContractPage({
           <Label htmlFor="contractAddress" className="text-xl text-bold">
             Contract Address
           </Label>
-          <div className="flex space-x-2">
-            <p className="p-2 rounded-md flex-grow">{contractAddress}</p>
-            {/* <Button onClick={fetchABI}>Fetch ABI</Button> */}
+          <div
+            className={cn(
+              "flex items-center space-x-2 h-10",
+              exists ? "cursor-pointer" : ""
+            )}
+            onClick={handleInspectContract}
+          >
+            <div
+              className={cn(
+                "flex-grow flex items-center justify-between space-x-2 border rounded-full pr-2",
+                exists ? "border-accent" : "border-gray-300"
+              )}
+            >
+              <div className="flex items-center space-x-2 ">
+                {exists ? (
+                  <ScrollTextIcon className="h-8 w-8 text-accent p-2" />
+                ) : (
+                  <QuestionMarkCircledIcon className="h-8 w-8 text-accent p-1" />
+                )}
+                <p className="py-1">{contractAddress}</p>
+              </div>
+              {!exists ? (
+                <div className="flex items-center space-x-2">
+                  <p className="text-accent text-sm italic">
+                    Could not find contract on {network.name}
+                  </p>
+                </div>
+              ) : (
+                <div>
+                  <ExternalLink className="h-6 w-6 text-accent p-1" />
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -183,7 +235,7 @@ export default function NewContractPage({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
-          <Input id="title" {...register("title")} />
+          <Input id="title" {...register("title")} defaultValue="My Page" />
           {errors.title && (
             <p className="text-red-500">{errors.title.message}</p>
           )}

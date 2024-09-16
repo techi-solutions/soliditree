@@ -1,8 +1,11 @@
 import { Suspense } from "react";
 import NewContractPageContainer from "@/containers/NewContractPage";
-import ContractPagesABI from "@/abi/ContractPages.abi.json";
 import IPFSService from "@/services/ipfs";
-import { ContractPage } from "@/services/contractPages";
+import { ContractPage, ContractPagesService } from "@/services/contractPages";
+import { NETWORKS } from "@/constants/networks";
+import { CHAINS } from "@/constants/chains";
+import { ScanService } from "@/services/scan";
+import { ProxyContractService } from "@/services/proxyContract";
 
 async function createPage(data: FormData) {
   "use server";
@@ -36,16 +39,61 @@ async function createPage(data: FormData) {
   return hash;
 }
 
-export default function NewContractPage({
+export default async function NewContractPage({
   params,
+  searchParams,
 }: {
   params: { contractAddress: string };
+  searchParams: { chainId: string };
 }) {
+  const chainId = Number(searchParams.chainId);
+
+  const network = NETWORKS[chainId];
+
+  const chain = CHAINS[chainId];
+
+  const contractPagesService = new ContractPagesService(
+    network.rpcUrl,
+    network.adminContractAddress,
+    chain
+  );
+
+  const exists = await contractPagesService.contractExists();
+
+  const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
+
+  if (!apiKey) {
+    throw new Error("ETHERSCAN_API_KEY is not set");
+  }
+
+  const proxyContractService = new ProxyContractService(
+    network.rpcUrl,
+    params.contractAddress,
+    chain
+  );
+
+  const scan = new ScanService(
+    apiKey,
+    network.explorerApi,
+    proxyContractService
+  );
+
+  const abi = await scan.getContractABI();
+
+  console.log("abi", abi);
+
+  console.log("exists", exists);
+
+  console.log("chainId", chainId);
+  console.log("network", network);
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <NewContractPageContainer
+        chainId={chainId}
+        network={network}
         contractAddress={params.contractAddress}
-        abi={ContractPagesABI.abi}
+        exists={exists}
+        abi={abi}
         createPage={createPage}
       />
     </Suspense>

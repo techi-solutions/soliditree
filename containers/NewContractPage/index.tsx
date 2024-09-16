@@ -11,19 +11,27 @@ import {
   DroppableProvided,
   DraggableProvided,
   DropResult,
-} from "react-beautiful-dnd";
+} from "@hello-pangea/dnd";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ExternalLink, Globe, ScrollTextIcon, Smile } from "lucide-react";
-import Image from "next/image";
+import {
+  CheckCircle,
+  Circle,
+  ExternalLink,
+  ScrollTextIcon,
+  Pencil,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
-import ContractPagesABI from "@/abi/ContractPages.abi.json";
 import { Network } from "@/constants/networks";
-import { QuestionMarkCircledIcon } from "@radix-ui/react-icons";
+import {
+  DragHandleHorizontalIcon,
+  QuestionMarkCircledIcon,
+} from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
+import { ExtendedAbi } from "@/services/scan";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -47,20 +55,19 @@ export default function NewContractPage({
   network,
   contractAddress,
   exists,
-  abi = [],
+  abi,
   createPage,
 }: {
   chainId: number;
   network: Network;
   contractAddress: string;
   exists: boolean;
-  abi: typeof ContractPagesABI.abi | undefined;
+  abi: ExtendedAbi;
   createPage: (formData: FormData) => Promise<string>;
 }) {
   const selectedChainId = useChainId();
-  const [functions, setFunctions] = useState(
-    abi.filter((v) => v.type === "function")
-  );
+  const allFunctions: ExtendedAbi = abi ?? [];
+  const [functions, setFunctions] = useState([...allFunctions]);
   //   const [generatedPageAddress, setGeneratedPageAddress] = useState("");
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -126,6 +133,19 @@ export default function NewContractPage({
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
     setFunctions(items);
+  };
+
+  const handleToggleSelected = (id: string) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id ? { ...func, selected: !func.selected } : func
+      )
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const selected = functions.every((func) => func.selected);
+    setFunctions(functions.map((func) => ({ ...func, selected: !selected })));
   };
 
   //   const toggleFunctionVisibility = (id: string) => {
@@ -232,123 +252,124 @@ export default function NewContractPage({
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <div>
-          <Label htmlFor="title">Title</Label>
-          <Input id="title" {...register("title")} defaultValue="My Page" />
-          {errors.title && (
-            <p className="text-red-500">{errors.title.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="description">Description</Label>
-          <Textarea id="description" {...register("description")} />
-          {errors.description && (
-            <p className="text-red-500">{errors.description.message}</p>
-          )}
-        </div>
-
-        <div>
-          <Label htmlFor="icon">Icon (SVG only) (optional)</Label>
-          <Input
-            id="icon"
-            type="file"
-            accept=".svg"
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-          {errors.icon && <p className="text-red-500">{errors.icon.message}</p>}
-        </div>
-
-        <div>
-          <Label htmlFor="website">Website Link (optional)</Label>
-          <Input id="website" {...register("website")} />
-          {errors.website && (
-            <p className="text-red-500">{errors.website.message}</p>
-          )}
-        </div>
-
-        <Button type="submit" className="mt-4">
-          Create Page
-        </Button>
-      </form>
-
-      <div>
-        <h2 className="text-xl font-semibold mb-2">Functions</h2>
-        <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="functions">
-            {(provided: DroppableProvided) => (
-              <ul
-                {...provided.droppableProps}
-                ref={provided.innerRef}
-                className="space-y-2"
-              >
-                {functions.map((func, index) => (
-                  <Draggable
-                    key={func.name}
-                    draggableId={func.name ?? `${index}`}
-                    index={index}
-                  >
-                    {(provided: DraggableProvided) => (
-                      <li
-                        ref={provided.innerRef}
-                        {...provided.draggableProps}
-                        {...provided.dragHandleProps}
-                        className="flex items-center justify-between p-2 bg-gray-100 text-black rounded"
-                      >
-                        <span>{func.name}</span>
-                        <div className="space-x-2">
-                          {/* <Button
-                            variant="outline"
-                            size="icon"
-                            onClick={() => toggleFunctionVisibility(func.id)}
-                            className="bg-white text-black hover:bg-gray-200"
-                          >
-                            {func.visible ? (
-                              <ChevronUp className="h-4 w-4" />
-                            ) : (
-                              <ChevronDown className="h-4 w-4" />
-                            )}
-                          </Button> */}
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="bg-white text-black hover:bg-gray-200"
-                          >
-                            <Image
-                              src="/path/to/image.svg"
-                              alt="Icon"
-                              width={20}
-                              height={20}
-                              className="h-4 w-4"
-                            />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="bg-white text-black hover:bg-gray-200"
-                          >
-                            <Smile className="h-4 w-4" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="bg-white text-black hover:bg-gray-200"
-                          >
-                            <Globe className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </li>
-                    )}
-                  </Draggable>
-                ))}
-                {provided.placeholder}
-              </ul>
+      {exists && (
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+          <div>
+            <Label htmlFor="title">Title</Label>
+            <Input id="title" {...register("title")} defaultValue="My Page" />
+            {errors.title && (
+              <p className="text-red-500">{errors.title.message}</p>
             )}
-          </Droppable>
-        </DragDropContext>
-      </div>
+          </div>
+
+          <div>
+            <Label htmlFor="description">Description</Label>
+            <Textarea id="description" {...register("description")} />
+            {errors.description && (
+              <p className="text-red-500">{errors.description.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="icon">Icon (SVG only) (optional)</Label>
+            <Input
+              id="icon"
+              type="file"
+              accept=".svg"
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+            {errors.icon && (
+              <p className="text-red-500">{errors.icon.message}</p>
+            )}
+          </div>
+
+          <div>
+            <Label htmlFor="website">Website Link (optional)</Label>
+            <Input id="website" {...register("website")} />
+            {errors.website && (
+              <p className="text-red-500">{errors.website.message}</p>
+            )}
+          </div>
+
+          <Button type="submit" className="mt-4">
+            Create Page
+          </Button>
+        </form>
+      )}
+
+      {exists && allFunctions.length > 0 && (
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold mb-2">Functions</h2>
+            <Button onClick={handleToggleSelectAll}>Select All</Button>
+          </div>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="functions">
+              {(provided: DroppableProvided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-2"
+                >
+                  {functions.map((func, index) => (
+                    <Draggable
+                      key={func.id}
+                      draggableId={func.id}
+                      index={index}
+                    >
+                      {(provided: DraggableProvided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded",
+                            func.selected
+                              ? "bg-gray-100 text-black border border-accent"
+                              : "bg-gray-50 text-black/70 border border-gray-300"
+                          )}
+                        >
+                          <div className="flex items-center flex-grow space-x-2">
+                            <div>
+                              <DragHandleHorizontalIcon className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="flex items-center">
+                                {func.name}
+                                <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
+                              </span>
+                              <span className="text-muted-foreground text-xs">
+                                {func.id}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="space-x-2">
+                            <div
+                              className={cn(
+                                "p-4 hover:bg-white hover:text-black rounded-full cursor-pointer",
+                                func.selected ? "text-black" : "text-black/70"
+                              )}
+                              onClick={() => handleToggleSelected(func.id)}
+                            >
+                              {func.selected ? (
+                                <CheckCircle className="h-4 w-4" />
+                              ) : (
+                                <Circle className="h-4 w-4" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
+        </div>
+      )}
 
       {/* {generatedPageAddress && (
         <div className="mt-4">

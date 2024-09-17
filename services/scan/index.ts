@@ -1,9 +1,13 @@
-import { Abi, AbiFunction } from "viem";
+import { Abi, AbiFunction, keccak256, toBytes } from "viem";
 import { ProxyContractService } from "../proxyContract";
 
 // Define a new type that extends Abi with an 'id' property
 // export type ExtendedAbiFunction = Abi & {Abi id: string }[];
-export type ExtendedAbi = (AbiFunction & { id: string; selected: boolean })[];
+export type ExtendedAbi = (AbiFunction & {
+  id: string;
+  signature: string;
+  selected: boolean;
+})[];
 
 export class ScanService {
   constructor(
@@ -35,6 +39,15 @@ export class ScanService {
               : `${acc},${input.name} ${input.type}`,
           ""
         )})`,
+        signature: keccak256(
+          toBytes(
+            `${v.name}(${v.inputs.reduce(
+              (acc, input, i) =>
+                i === 0 ? `${acc}${input.type}` : `${acc},${input.type}`,
+              ""
+            )})`
+          )
+        ),
         selected: false,
       }));
   }

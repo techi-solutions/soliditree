@@ -22,6 +22,8 @@ import {
   ExternalLink,
   ScrollTextIcon,
   Pencil,
+  ImageIcon,
+  Loader2,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
@@ -32,6 +34,10 @@ import {
 } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
 import { ExtendedAbi } from "@/services/scan";
+import Image from "next/image";
+import { Chain } from "viem";
+import { ContractPagesCreatePage } from "@/services/contractPages/client";
+import { Progress } from "@/components/ui/progress";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -42,42 +48,46 @@ const chains = [
 ];
 
 const formSchema = z.object({
-  title: z.string().min(1, "Title is required").default("My Page"),
-  description: z.string().min(1, "Description is required"),
+  title: z.string().min(1, "Your page needs a title").default("My Page"),
+  description: z.string().min(1, "Provide a short description of your page"),
   icon: z.instanceof(File).optional(),
-  website: z.string().url().optional(),
+  website: z.union([z.string().url(), z.string().length(0)]).optional(),
 });
 
 export type CreatePageFormData = z.infer<typeof formSchema>;
 
 export default function NewContractPage({
-  chainId,
+  chain,
   network,
   contractAddress,
   exists,
   abi,
   createPage,
 }: {
-  chainId: number;
+  chain: Chain;
   network: Network;
   contractAddress: string;
   exists: boolean;
   abi: ExtendedAbi;
-  createPage: (formData: FormData) => Promise<string>;
+  createPage: (formData: FormData, functions: ExtendedAbi) => Promise<string>;
 }) {
   const selectedChainId = useChainId();
   const allFunctions: ExtendedAbi = abi ?? [];
-  const [functions, setFunctions] = useState([...allFunctions]);
-  //   const [generatedPageAddress, setGeneratedPageAddress] = useState("");
+  const [functions, setFunctions] = useState<ExtendedAbi>([...allFunctions]);
+
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [iconFile, setIconFile] = useState<File | null>(null);
 
+  const [creationStatus, setCreationStatus] = useState<
+    "idle" | "approval" | "uploading" | "creating" | "success" | "error"
+  >("idle");
+
   useEffect(() => {
-    if (selectedChainId !== chainId) {
+    if (selectedChainId !== chain.id) {
       router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
     }
-  }, [selectedChainId, chainId, router, contractAddress]);
+  }, [selectedChainId, chain.id, router, contractAddress]);
 
   const {
     register,
@@ -101,18 +111,42 @@ export default function NewContractPage({
     }
 
     try {
-      const hash = await createPage(formData);
+      const selectedFunctions = functions.filter((func) => func.selected);
+      console.log("selectedFunctions", selectedFunctions);
+      if (selectedFunctions.length === 0) {
+        throw new Error("No functions selected");
+      }
+
+      setCreationStatus("uploading");
+
+      const hash = await createPage(formData, selectedFunctions);
       console.log("hash", hash);
-      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`;
+
+      setCreationStatus("approval");
+
+      const pageId = await ContractPagesCreatePage(
+        contractAddress,
+        `ipfs://${hash}`,
+        setCreationStatus
+      );
+      console.log("pageId", pageId);
+      setCreationStatus("success");
+      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}`;
+      console.log("pageAddress", pageAddress);
+
       router.push(
         `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
           pageAddress
         )}`
       );
+      return;
     } catch (error) {
       console.error("Error creating page:", error);
+      setCreationStatus("error");
+      return;
       // Handle error (e.g., show error message to user)
     }
+    setCreationStatus("idle");
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -185,13 +219,19 @@ export default function NewContractPage({
     window.open(`${network.explorer}/address/${contractAddress}`, "_blank");
   };
 
-  console.log("chainId", chainId);
+  console.log("chainId", chain.id);
   console.log("contractAddress", contractAddress);
 
-  const supportedChain = chains.some((chain) => chain.id === chainId);
+  const supportedChain = chains.some((chain) => chain.id === chain.id);
+
+  const canCreatePage =
+    exists &&
+    functions.filter((func) => func.selected).length > 0 &&
+    !errors.title &&
+    !errors.description;
 
   return (
-    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl">
+    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl relative pb-20">
       <h1 className="text-2xl font-bold mb-4">New Contract Page</h1>
 
       <div className="space-y-4">
@@ -272,13 +312,30 @@ export default function NewContractPage({
 
           <div>
             <Label htmlFor="icon">Icon (SVG only) (optional)</Label>
-            <Input
-              id="icon"
-              type="file"
-              accept=".svg"
-              ref={fileInputRef}
-              onChange={handleFileChange}
-            />
+            <div className="relative">
+              <Input
+                id="icon"
+                type="file"
+                accept=".svg"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="pl-8"
+                style={{ paddingTop: 5 }}
+              />
+              <div className="absolute" style={{ top: 2, left: 2 }}>
+                {iconFile ? (
+                  <Image
+                    src={URL.createObjectURL(iconFile)}
+                    alt="Icon"
+                    width={24}
+                    height={24}
+                    className="ml-1"
+                  />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+            </div>
             {errors.icon && (
               <p className="text-red-500">{errors.icon.message}</p>
             )}
@@ -292,9 +349,51 @@ export default function NewContractPage({
             )}
           </div>
 
-          <Button type="submit" className="mt-4">
-            Create Page
-          </Button>
+          <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
+            <div className="flex items-center justify-between container mx-auto max-w-2xl">
+              {(creationStatus === "idle" || creationStatus === "error") && (
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={!canCreatePage}
+                >
+                  Create Page
+                </Button>
+              )}
+              {creationStatus === "uploading" ||
+              creationStatus === "approval" ||
+              creationStatus === "creating" ||
+              creationStatus === "success" ? (
+                <div className="w-full flex flex-col items-center justify-center">
+                  <p className="text-sm text-muted-foreground">
+                    {creationStatus === "uploading"
+                      ? "Uploading page content ⏳"
+                      : creationStatus === "approval"
+                      ? "Requesting to sign transaction 🔑"
+                      : creationStatus === "creating"
+                      ? "Publishing page 🚀"
+                      : "Page created 🎉"}
+                  </p>
+                  <div className="w-full flex items-center justify-center">
+                    <Progress
+                      value={
+                        creationStatus === "uploading"
+                          ? 25
+                          : creationStatus === "approval"
+                          ? 50
+                          : creationStatus === "creating"
+                          ? 75
+                          : creationStatus === "success"
+                          ? 100
+                          : 0
+                      }
+                    />
+                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
         </form>
       )}
 

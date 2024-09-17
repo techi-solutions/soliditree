@@ -7,24 +7,16 @@ import {
 } from "viem";
 import { gnosis } from "viem/chains";
 import ContractPagesABI from "@/abi/ContractPages.abi.json";
+import { ExtendedAbi } from "../scan";
 
-export interface ContractPageFunction {
-  name: string;
-  inputs: {
-    name: string;
-    type: string;
-  }[];
-  outputs: {
-    name: string;
-    type: string;
-  }[];
-}
 export interface ContractPage {
+  chainId: number;
+  contractAddress: string;
   title: string;
   description: string;
   website?: string;
   icon?: string;
-  functions: ContractPageFunction[];
+  functions: ExtendedAbi;
 }
 
 export class ContractPagesService {
@@ -70,6 +62,4 @@ export class ContractPagesService {
     const result = this.contract().abi;
     return result;
   }
-
-  // Add more methods here for other contract interactions
 }

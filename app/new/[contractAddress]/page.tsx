@@ -4,40 +4,8 @@ import IPFSService from "@/services/ipfs";
 import { ContractPage, ContractPagesService } from "@/services/contractPages";
 import { NETWORKS } from "@/constants/networks";
 import { CHAINS } from "@/constants/chains";
-import { ScanService } from "@/services/scan";
+import { ExtendedAbi, ScanService } from "@/services/scan";
 import { ProxyContractService } from "@/services/proxyContract";
-
-async function createPage(data: FormData) {
-  "use server";
-
-  const ipfsService = new IPFSService(
-    process.env.IPFS_URL as string,
-    process.env.IPFS_API_KEY as string
-  );
-
-  console.log(data);
-  const icon = data.get("icon") as File | undefined;
-
-  const uploadData: ContractPage = {
-    title: data.get("title") as string,
-    description: data.get("description") as string,
-    website: data.get("website") as string,
-    functions: [],
-  };
-
-  if (!icon) {
-    uploadData.icon = process.env.DEFAULT_ICON as string;
-  } else {
-    const iconHash = await ipfsService.uploadFile(icon);
-    console.log("iconHash", iconHash);
-    uploadData.icon = `ipfs://${iconHash}`;
-  }
-  const hash = await ipfsService.uploadJSON(
-    uploadData as unknown as Record<string, unknown>
-  );
-  console.log("hash", hash);
-  return hash;
-}
 
 export default async function NewContractPage({
   params,
@@ -66,6 +34,44 @@ export default async function NewContractPage({
     throw new Error("ETHERSCAN_API_KEY is not set");
   }
 
+  const createPage = async (data: FormData, functions: ExtendedAbi) => {
+    "use server";
+
+    if (functions.length === 0) {
+      throw new Error("No functions selected");
+    }
+
+    const ipfsService = new IPFSService(
+      process.env.IPFS_URL as string,
+      process.env.IPFS_API_KEY as string
+    );
+
+    console.log(data);
+    const icon = data.get("icon") as File | undefined;
+
+    const uploadData: ContractPage = {
+      chainId: Number(searchParams.chainId),
+      contractAddress: params.contractAddress,
+      title: data.get("title") as string,
+      description: data.get("description") as string,
+      website: data.get("website") as string,
+      functions,
+    };
+
+    if (!icon) {
+      uploadData.icon = process.env.DEFAULT_ICON as string;
+    } else {
+      const iconHash = await ipfsService.uploadFile(icon);
+      console.log("iconHash", iconHash);
+      uploadData.icon = `ipfs://${iconHash}`;
+    }
+    const hash = await ipfsService.uploadJSON(
+      uploadData as unknown as Record<string, unknown>
+    );
+    console.log("hash", hash);
+    return hash;
+  };
+
   const proxyContractService = new ProxyContractService(
     network.rpcUrl,
     params.contractAddress,
@@ -89,7 +95,7 @@ export default async function NewContractPage({
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <NewContractPageContainer
-        chainId={chainId}
+        chain={chain}
         network={network}
         contractAddress={params.contractAddress}
         exists={exists}

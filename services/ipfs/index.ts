@@ -1,6 +1,7 @@
 "use server";
 
 import { PinataSDK } from "pinata-web3";
+import { ContractPage } from "../contractPages";
 
 class IPFSService {
   private pinata: PinataSDK;
@@ -18,6 +19,21 @@ class IPFSService {
   async uploadJSON(json: Record<string, unknown>): Promise<string> {
     const upload = await this.pinata.upload.json(json);
     return upload.IpfsHash;
+  }
+
+  async getJSON(hash: string): Promise<ContractPage> {
+    const response = await fetch(
+      `${hash.replace(
+        "ipfs://",
+        `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
+      )}`
+    );
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch JSON");
+    }
+
+    return await response.json();
   }
 }
 

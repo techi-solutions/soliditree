@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import NewContractPageContainer from "@/containers/NewContractPage";
 import IPFSService from "@/services/ipfs";
-import { ContractPage, ContractPagesService } from "@/services/contractPages";
+import { ContractPage } from "@/services/contractPages";
 import { NETWORKS } from "@/constants/networks";
 import { CHAINS } from "@/constants/chains";
 import { ExtendedAbi, ScanService } from "@/services/scan";
@@ -19,14 +19,6 @@ export default async function NewContractPage({
   const network = NETWORKS[chainId];
 
   const chain = CHAINS[chainId];
-
-  const contractPagesService = new ContractPagesService(
-    network.rpcUrl,
-    network.adminContractAddress,
-    chain
-  );
-
-  const exists = await contractPagesService.contractExists();
 
   const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
 
@@ -86,16 +78,12 @@ export default async function NewContractPage({
 
   const abi = await scan.getContractABI();
 
-  console.log("abi", abi);
+  const exists = abi.length > 0;
 
-  console.log("exists", exists);
-
-  console.log("chainId", chainId);
-  console.log("network", network);
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <NewContractPageContainer
-        chain={chain}
+        chainId={chain.id}
         network={network}
         contractAddress={params.contractAddress}
         exists={exists}

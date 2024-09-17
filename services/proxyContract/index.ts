@@ -43,9 +43,6 @@ export class ProxyContractService {
 
       // Trim leading zeros and take the last 40 characters (20 bytes) for the address
       const trimmedAddress = `0x${implementationAddress.slice(-40)}`;
-      console.log("Trimmed implementationAddress", trimmedAddress);
-
-      console.log("implementationAddress", implementationAddress);
 
       const hasImplementation =
         trimmedAddress !== "0x" &&

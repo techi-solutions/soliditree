@@ -35,7 +35,6 @@ import {
 import { cn } from "@/lib/utils";
 import { ExtendedAbi } from "@/services/scan";
 import Image from "next/image";
-import { Chain } from "viem";
 import { ContractPagesCreatePage } from "@/services/contractPages/client";
 import { Progress } from "@/components/ui/progress";
 
@@ -57,14 +56,14 @@ const formSchema = z.object({
 export type CreatePageFormData = z.infer<typeof formSchema>;
 
 export default function NewContractPage({
-  chain,
+  chainId,
   network,
   contractAddress,
   exists,
   abi,
   createPage,
 }: {
-  chain: Chain;
+  chainId: number;
   network: Network;
   contractAddress: string;
   exists: boolean;
@@ -84,10 +83,10 @@ export default function NewContractPage({
   >("idle");
 
   useEffect(() => {
-    if (selectedChainId !== chain.id) {
+    if (selectedChainId !== chainId) {
       router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
     }
-  }, [selectedChainId, chain.id, router, contractAddress]);
+  }, [selectedChainId, chainId, router, contractAddress]);
 
   const {
     register,
@@ -219,7 +218,7 @@ export default function NewContractPage({
     window.open(`${network.explorer}/address/${contractAddress}`, "_blank");
   };
 
-  console.log("chainId", chain.id);
+  console.log("chainId", chainId);
   console.log("contractAddress", contractAddress);
 
   const supportedChain = chains.some((chain) => chain.id === chain.id);

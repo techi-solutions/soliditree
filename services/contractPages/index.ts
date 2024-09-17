@@ -2,6 +2,7 @@ import {
   Chain,
   createPublicClient,
   getContract,
+  hexToString,
   http,
   PublicClient,
 } from "viem";
@@ -43,16 +44,22 @@ export class ContractPagesService {
     const result = await this.client.getCode({
       address: this.contractAddress as `0x${string}`,
     });
-    console.log("result", result);
+
     return result !== "0x" && !!result;
+  }
+
+  async getPageContentHash(pageId: string) {
+    const result = await this.contract().read.pageContentHashes([pageId]);
+    return hexToString(result as `0x${string}`);
   }
 
   async getContractAddress(pageId: string) {
     const result = await this.contract().read.pageContractAddresses([pageId]);
+    console.log("result", result);
     return result as string;
   }
 
-  async getContractAddressByReservedName(reservedName: string) {
+  async getPageIdByReservedName(reservedName: string) {
     const result = await this.contract().read.getReservedName([reservedName]);
     return result as string;
   }

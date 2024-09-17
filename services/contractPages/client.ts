@@ -10,16 +10,11 @@ import {
 import { config } from "../walletConnect/config";
 import { extractEventData } from "@/utils/events";
 import { AbiItem, stringToHex } from "viem";
-import { Dispatch, SetStateAction } from "react";
 
 export const ContractPagesCreatePage = async (
   contractAddress: string,
   contentHash: string,
-  setCreationStatus: Dispatch<
-    SetStateAction<
-      "error" | "success" | "idle" | "approval" | "uploading" | "creating"
-    >
-  >
+  onCreating: () => void
 ) => {
   const contentHashBytes = stringToHex(contentHash);
 
@@ -33,7 +28,7 @@ export const ContractPagesCreatePage = async (
   const result = await writeContract(config, request);
   console.log("result", result);
 
-  setCreationStatus("creating");
+  onCreating();
 
   const receipt = await waitForTransactionReceipt(config, {
     hash: result,

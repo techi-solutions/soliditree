@@ -47,12 +47,11 @@ export default async function NewContractPage({
       title: data.get("title") as string,
       description: data.get("description") as string,
       website: data.get("website") as string,
+      icon: process.env.DEFAULT_ICON as string,
       functions,
     };
 
-    if (!icon) {
-      uploadData.icon = process.env.DEFAULT_ICON as string;
-    } else {
+    if (icon) {
       const iconHash = await ipfsService.uploadFile(icon);
       console.log("iconHash", iconHash);
       uploadData.icon = `ipfs://${iconHash}`;

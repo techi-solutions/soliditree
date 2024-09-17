@@ -133,7 +133,7 @@ export default function NewContractPage({
       const pageId = await ContractPagesCreatePage(
         contractAddress,
         `ipfs://${hash}`,
-        setCreationStatus
+        () => setCreationStatus("creating")
       );
       console.log("pageId", pageId);
       setCreationStatus("success");
@@ -292,7 +292,12 @@ export default function NewContractPage({
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           <div>
             <Label htmlFor="title">Title</Label>
-            <Input id="title" {...register("title")} defaultValue="My Page" />
+            <Input
+              id="title"
+              {...register("title")}
+              className="text-input"
+              defaultValue="My Page"
+            />
             {errors.title && (
               <p className="text-red-500">{errors.title.message}</p>
             )}
@@ -315,7 +320,7 @@ export default function NewContractPage({
                 accept=".svg"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                className="pl-8"
+                className="pl-8 text-input"
                 style={{ paddingTop: 5 }}
               />
               <div className="absolute" style={{ top: 2, left: 2 }}>
@@ -339,7 +344,11 @@ export default function NewContractPage({
 
           <div>
             <Label htmlFor="website">Website Link (optional)</Label>
-            <Input id="website" {...register("website")} />
+            <Input
+              id="website"
+              {...register("website")}
+              className="text-input"
+            />
             {errors.website && (
               <p className="text-red-500">{errors.website.message}</p>
             )}
@@ -435,9 +444,7 @@ export default function NewContractPage({
                                 <Popover
                                   open={openPopoverId === func.id}
                                   onOpenChange={(open) =>
-                                    open
-                                      ? setOpenPopoverId(func.id)
-                                      : setOpenPopoverId(null)
+                                    setOpenPopoverId(open ? func.id : null)
                                   }
                                 >
                                   <PopoverTrigger asChild>
@@ -450,6 +457,7 @@ export default function NewContractPage({
                                       </h4>
                                       <Input
                                         defaultValue={func.name}
+                                        className="text-input"
                                         onKeyDown={(e) => {
                                           if (e.key === "Enter") {
                                             handleEditFunctionName(

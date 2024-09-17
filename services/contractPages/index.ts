@@ -16,7 +16,7 @@ export interface ContractPage {
   title: string;
   description: string;
   website?: string;
-  icon?: string;
+  icon: string;
   functions: ExtendedAbi;
 }
 

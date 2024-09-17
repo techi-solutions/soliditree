@@ -33,7 +33,14 @@ class IPFSService {
       throw new Error("Failed to fetch JSON");
     }
 
-    return await response.json();
+    const page = (await response.json()) as ContractPage;
+
+    page.icon = page.icon.replace(
+      "ipfs://",
+      `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
+    );
+
+    return await page;
   }
 }
 

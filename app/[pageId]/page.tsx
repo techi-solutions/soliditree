@@ -2,6 +2,7 @@ import { NETWORKS } from "@/constants/networks";
 import { ContractPagesService } from "@/services/contractPages";
 import IPFSService from "@/services/ipfs";
 import { Suspense } from "react";
+import ContractPageContainer from "@/containers/ContractPage";
 
 export default async function NewContractPage({
   params,
@@ -44,11 +45,7 @@ export default async function NewContractPage({
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <div>
-        <h1>Page {pageId}</h1>
-        <div>{page?.contractAddress}</div>
-        <div>{JSON.stringify(page)}</div>
-      </div>
+      <ContractPageContainer contractData={page} network={network} />
     </Suspense>
   );
 }

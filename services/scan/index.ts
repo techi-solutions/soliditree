@@ -3,11 +3,13 @@ import { ProxyContractService } from "../proxyContract";
 
 // Define a new type that extends Abi with an 'id' property
 // export type ExtendedAbiFunction = Abi & {Abi id: string }[];
-export type ExtendedAbi = (AbiFunction & {
+export type ExtendedAbiItem = AbiFunction & {
   id: string;
   signature: string;
   selected: boolean;
-})[];
+};
+
+export type ExtendedAbi = ExtendedAbiItem[];
 
 export class ScanService {
   constructor(

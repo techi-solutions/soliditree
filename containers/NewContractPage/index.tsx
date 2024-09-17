@@ -37,6 +37,11 @@ import { ExtendedAbi } from "@/services/scan";
 import Image from "next/image";
 import { ContractPagesCreatePage } from "@/services/contractPages/client";
 import { Progress } from "@/components/ui/progress";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -81,6 +86,8 @@ export default function NewContractPage({
   const [creationStatus, setCreationStatus] = useState<
     "idle" | "approval" | "uploading" | "creating" | "success" | "error"
   >("idle");
+
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
     if (selectedChainId !== chainId) {
@@ -181,34 +188,6 @@ export default function NewContractPage({
     setFunctions(functions.map((func) => ({ ...func, selected: !selected })));
   };
 
-  //   const toggleFunctionVisibility = (id: string) => {
-  //     setFunctions(
-  //       functions.map((func) =>
-  //         func.id === id ? { ...func, visible: !func.visible } : func
-  //       )
-  //     );
-  //   };
-
-  //   const handleCreate = async () => {
-  //     // Placeholder function to generate page address
-  //     await createPage({ hello: "world" });
-
-  //     console.log("Creating page for", contractAddress);
-  //     const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${contractAddress}`; // TODO: use generated page address
-  //     router.push(
-  //       `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
-  //         pageAddress
-  //       )}`
-  //     );
-  //   };
-
-  // Update chainId when the network changes
-  //   useEffect(() => {
-  //     if (chainId) {
-  //       setChainId(chainId.toString());
-  //     }
-  //   }, [chainId]);
-
   const handleInspectContract = () => {
     if (!exists) {
       return;
@@ -216,6 +195,24 @@ export default function NewContractPage({
 
     // open new tab in block explorer
     window.open(`${network.explorer}/address/${contractAddress}`, "_blank");
+  };
+
+  const handleEditFunctionName = (
+    id: string,
+    newName: string,
+    close = true
+  ) => {
+    if (!newName) {
+      return;
+    }
+    setFunctions(
+      functions.map((func) =>
+        func.id === id ? { ...func, name: newName } : func
+      )
+    );
+    if (close) {
+      setOpenPopoverId(null); // Close the popover
+    }
   };
 
   console.log("chainId", chainId);
@@ -435,7 +432,53 @@ export default function NewContractPage({
                             <div className="flex flex-col">
                               <span className="flex items-center">
                                 {func.name}
-                                <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
+                                <Popover
+                                  open={openPopoverId === func.id}
+                                  onOpenChange={(open) =>
+                                    open
+                                      ? setOpenPopoverId(func.id)
+                                      : setOpenPopoverId(null)
+                                  }
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium">
+                                        Edit Function Name
+                                      </h4>
+                                      <Input
+                                        defaultValue={func.name}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            handleEditFunctionName(
+                                              func.id,
+                                              e.currentTarget.value
+                                            );
+                                          }
+                                        }}
+                                        onChange={(e) => {
+                                          handleEditFunctionName(
+                                            func.id,
+                                            e.currentTarget.value,
+                                            false
+                                          );
+                                        }}
+                                      />
+                                      <div className="flex justify-end">
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            setOpenPopoverId(null);
+                                          }}
+                                        >
+                                          Close
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
                               </span>
                               <span className="text-muted-foreground text-xs">
                                 {func.id}
@@ -468,18 +511,6 @@ export default function NewContractPage({
           </DragDropContext>
         </div>
       )}
-
-      {/* {generatedPageAddress && (
-        <div className="mt-4">
-          <h2 className="text-xl font-semibold">Generated Page Address:</h2>
-          <a
-            href={generatedPageAddress}
-            className="text-blue-500 hover:underline"
-          >
-            {generatedPageAddress}
-          </a>
-        </div>
-      )} */}
     </div>
   );
 }

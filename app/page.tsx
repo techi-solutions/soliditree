@@ -78,7 +78,7 @@ export default function LandingPage() {
           />
         </div>
         <h1 className="text-5xl font-extrabold mb-6 tracking-tight">
-          dInterface
+          Soliditree
         </h1>
         <h2 className="text-2xl mb-6 tracking-tight">
           Smart Contract UI Generator

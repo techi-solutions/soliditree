@@ -19,7 +19,7 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "dInterface",
+  title: "Soliditree",
   description: "An interface for your smart contracts",
   icons: {
     icon: "/favicon.ico",

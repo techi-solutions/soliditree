@@ -217,6 +217,8 @@ export default function NewContractPage({
 
   console.log("chainId", chainId);
   console.log("contractAddress", contractAddress);
+  console.log("network", network);
+  console.log(allFunctions);
 
   const supportedChain = chains.some((chain) => chain.id === chain.id);
 
@@ -354,7 +356,7 @@ export default function NewContractPage({
             )}
           </div>
 
-          <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
+          <div className="z-50 fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
             <div className="flex items-center justify-between container mx-auto max-w-2xl">
               {(creationStatus === "idle" || creationStatus === "error") && (
                 <Button

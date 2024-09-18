@@ -20,6 +20,8 @@ export default async function NewContractPage({
 
   const chain = CHAINS[chainId];
 
+  console.log("ssr network", network);
+
   const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
 
   if (!apiKey) {

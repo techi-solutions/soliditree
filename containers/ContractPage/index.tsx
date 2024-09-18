@@ -152,7 +152,7 @@ export default function Container({
                 </Label>
                 <Input
                   id={`${func.id}-value`}
-                  className="text-white text-input"
+                  className="text-white"
                   type="number"
                   step="0.000000000000000001"
                   min="0"
@@ -177,7 +177,7 @@ export default function Container({
                   <Input
                     id={`${func.id}-${input.name}`}
                     type="text"
-                    className="text-white text-input"
+                    className="text-white"
                     placeholder={input.type}
                     value={functionArgs[func.id]?.[input.name!] || ""}
                     onChange={(e) =>

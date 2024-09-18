@@ -90,7 +90,10 @@ export default function NewContractPage({
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedChainId !== chainId && selectedChainId) {
+    if (
+      selectedChainId !== chainId &&
+      chains.some((chain) => chain.id === selectedChainId)
+    ) {
       router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
     }
   }, [selectedChainId, chainId, router, contractAddress]);
@@ -220,7 +223,7 @@ export default function NewContractPage({
   console.log("network", network);
   console.log(allFunctions);
 
-  const supportedChain = chains.some((chain) => chain.id === chain.id);
+  const supportedChain = chains.some((chain) => chain.id === selectedChainId);
 
   const canCreatePage =
     exists &&

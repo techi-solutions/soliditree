@@ -90,7 +90,7 @@ export default function NewContractPage({
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
 
   useEffect(() => {
-    if (selectedChainId !== chainId) {
+    if (selectedChainId !== chainId && selectedChainId) {
       router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
     }
   }, [selectedChainId, chainId, router, contractAddress]);

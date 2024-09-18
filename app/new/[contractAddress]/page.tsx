@@ -26,8 +26,6 @@ export default async function NewContractPage({
     return <div>Chain not found</div>;
   }
 
-  console.log("ssr network", network);
-
   const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
 
   if (!apiKey) {

@@ -18,6 +18,9 @@ export default async function NewContractPage({
   }
 
   const network = NETWORKS[chainId];
+  if (!network) {
+    return <div>Network not found</div>;
+  }
 
   const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
 

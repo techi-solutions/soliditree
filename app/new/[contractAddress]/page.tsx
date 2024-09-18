@@ -17,8 +17,14 @@ export default async function NewContractPage({
   const chainId = Number(searchParams.chainId);
 
   const network = NETWORKS[chainId];
+  if (!network) {
+    return <div>Network not found</div>;
+  }
 
   const chain = CHAINS[chainId];
+  if (!chain) {
+    return <div>Chain not found</div>;
+  }
 
   console.log("ssr network", network);
 

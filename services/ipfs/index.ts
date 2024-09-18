@@ -21,26 +21,31 @@ class IPFSService {
     return upload.IpfsHash;
   }
 
-  async getJSON(hash: string): Promise<ContractPage> {
-    const response = await fetch(
-      `${hash.replace(
+  async getJSON(hash: string): Promise<ContractPage | null> {
+    try {
+      const response = await fetch(
+        `${hash.replace(
+          "ipfs://",
+          `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
+        )}`
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch JSON");
+      }
+
+      const page = (await response.json()) as ContractPage;
+
+      page.icon = page.icon.replace(
         "ipfs://",
         `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
-      )}`
-    );
+      );
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch JSON");
+      return await page;
+    } catch (error) {
+      console.error(error);
+      return null;
     }
-
-    const page = (await response.json()) as ContractPage;
-
-    page.icon = page.icon.replace(
-      "ipfs://",
-      `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
-    );
-
-    return await page;
   }
 }
 

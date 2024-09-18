@@ -46,6 +46,10 @@ export default async function NewContractPage({
   const hash = await contractPages.getPageContentHash(resolvedPageId);
   const page = await ipfsService.getJSON(hash);
 
+  if (!page) {
+    return <div>Page not found</div>;
+  }
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <ContractPageContainer contractData={page} network={network} />

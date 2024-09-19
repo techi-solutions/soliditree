@@ -147,7 +147,7 @@ const ColorPickerInput = ({
   );
 };
 
-export default function NewContractPage({
+export default function Container({
   chainId,
   network,
   contractAddress,
@@ -398,7 +398,7 @@ export default function NewContractPage({
     !errors.description;
 
   return (
-    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl relative pb-20">
+    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl relative pb-20 bg-white rounded-xl">
       <h1 className="text-2xl font-bold mb-4">New Contract Page</h1>
 
       <div className="space-y-4">

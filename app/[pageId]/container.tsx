@@ -38,6 +38,7 @@ import {
   ContractWriteFunction,
 } from "@/services/contracts/client";
 import { Progress } from "@/components/ui/progress";
+import { hexToRgb } from "@/utils/colors";
 
 export default function Container({
   contractData,
@@ -53,8 +54,6 @@ export default function Container({
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  console.log("contractData", contractData);
 
   const colors: ContractPageColors = contractData.colors ?? {
     background: "#10b77f",
@@ -146,20 +145,25 @@ export default function Container({
   };
 
   return (
-    <div
-      className="w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center"
-      style={{
-        backgroundColor: colors.background,
-        backgroundImage: contractData.backgroundImage
-          ? `url(${contractData.backgroundImage})`
-          : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-      }}
-    >
+    <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
+      {contractData.backgroundImage && (
+        <div
+          className="fixed top-0 left-0 w-full h-full z-[-1]"
+          style={{
+            backgroundImage: `url(${contractData.backgroundImage})`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+      )}
       <Card
-        className="max-w-xl mx-auto w-full border-transparent"
-        style={{ backgroundColor: colors.card, color: colors.cardText }}
+        className="max-w-xl mx-auto w-full border-transparent m-2"
+        style={{
+          backgroundColor: contractData.backgroundImage
+            ? `rgba(${hexToRgb(colors.card)}, 0.8)`
+            : colors.background,
+          color: colors.cardText,
+        }}
       >
         <CardHeader className="text-center relative">
           <Avatar className="w-24 h-24 mx-auto mt-4 mb-4">
@@ -175,7 +179,7 @@ export default function Container({
           >
             {contractData.description}
           </CardDescription>
-          <div className="absolute top-0 right-2 rounded-full overflow-hidden">
+          <div className="absolute top-1 right-2 rounded-full overflow-hidden bg-white py-1">
             <w3m-button balance="hide" size="md" />
           </div>
           {contractData.website && (

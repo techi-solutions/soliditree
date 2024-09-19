@@ -1,5 +1,5 @@
 import { Suspense } from "react";
-import NewContractPageContainer from "@/containers/NewContractPage";
+import Container from "./container";
 import IPFSService from "@/services/ipfs";
 import { ContractPage, ContractPageColors } from "@/services/contractPages";
 import { NETWORKS } from "@/constants/networks";
@@ -97,7 +97,8 @@ export default async function NewContractPage({
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <NewContractPageContainer
+      <meta name="theme-color" content="#0f766e" />
+      <Container
         chainId={chain.id}
         network={network}
         contractAddress={params.contractAddress}

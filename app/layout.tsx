@@ -4,6 +4,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { headers } from "next/headers";
 import ContextProvider from "@/services/walletConnect/context";
+import Favicon from "@/public/favicon.ico";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -20,7 +21,7 @@ export const metadata: Metadata = {
   title: "Soliditree",
   description: "An interface for your smart contracts",
   icons: {
-    icon: "/favicon.ico",
+    icon: Favicon.src,
   },
 };
 
@@ -32,7 +33,6 @@ export default function RootLayout({
   const cookies = headers().get("cookie");
   return (
     <html lang="en">
-      <meta name="theme-color" content="#0f766e" />
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-teal-700 via-emerald-600 to-green-500`}
       >

@@ -7,7 +7,10 @@ class IPFSService {
   private pinata: PinataSDK;
 
   constructor(apiUrl: string, apiKey: string) {
-    this.pinata = new PinataSDK({ pinataJwt: apiKey, pinataGateway: apiUrl });
+    this.pinata = new PinataSDK({
+      pinataJwt: apiKey,
+      pinataGateway: apiUrl,
+    });
   }
 
   async uploadFile(file: File): Promise<string> {
@@ -35,10 +38,7 @@ class IPFSService {
   async getJSON(hash: string): Promise<ContractPage | null> {
     try {
       const response = await fetch(
-        `${hash.replace(
-          "ipfs://",
-          `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
-        )}`
+        `${hash.replace("ipfs://", `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/`)}`
       );
 
       if (!response.ok) {
@@ -49,16 +49,16 @@ class IPFSService {
 
       page.icon = page.icon.replace(
         "ipfs://",
-        `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
+        `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/`
       );
       if (page.backgroundImage) {
         page.backgroundImage = page.backgroundImage.replace(
           "ipfs://",
-          `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/ipfs/`
+          `${process.env.NEXT_PUBLIC_IPFS_GATEWAY}/`
         );
       }
 
-      return await page;
+      return page;
     } catch (error) {
       console.error(error);
       return null;

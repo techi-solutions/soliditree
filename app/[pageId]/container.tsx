@@ -23,10 +23,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContractPage, ContractPageColors } from "@/services/contractPages";
 import { useAccount } from "wagmi";
 import {
+  CheckIcon,
   ExternalLinkIcon,
   EyeIcon,
   GitPullRequestCreateArrow,
   Loader2,
+  ShareIcon,
 } from "lucide-react"; // Import the Wallet icon
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -49,6 +51,8 @@ export default function Container({
   network: Network;
 }) {
   const { address } = useAccount();
+
+  const [isCopied, setIsCopied] = useState(false);
 
   // Fix for a development mode bug where UI is rendered on the server with missing values
   const [isClient, setIsClient] = useState(false);
@@ -149,6 +153,34 @@ export default function Container({
     setFunctionArgs({});
   };
 
+  const handleShareLink = async () => {
+    const url = window.location.href;
+
+    const shareData: ShareData = {
+      title: contractData.title,
+      text: contractData.description,
+      url: url,
+    };
+
+    if (navigator.canShare(shareData)) {
+      try {
+        await navigator.share({
+          title: contractData.title,
+          text: contractData.description,
+          url: url,
+        });
+        return;
+      } catch (error) {
+        console.error("Error sharing:", error);
+      }
+    }
+
+    await navigator.clipboard.writeText(url);
+
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 1000);
+  };
+
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
       {contractData.backgroundImage && (
@@ -171,6 +203,28 @@ export default function Container({
         }}
       >
         <CardHeader className="text-center relative">
+          <div
+            className={cn(
+              "absolute top-2 right-2 rounded-full overflow-hidden",
+              address ? "bg-white py-1" : "bg-white p-1"
+            )}
+          >
+            <w3m-button balance="hide" size="md" />
+          </div>
+          <div className="absolute top-1 left-2 rounded-full overflow-hidden">
+            <Button onClick={handleShareLink}>
+              {isCopied ? (
+                <>
+                  Copied! <CheckIcon className="h-4 w-4 ml-2" />
+                </>
+              ) : (
+                <>
+                  Share page <ShareIcon className="h-4 w-4 ml-2" />
+                </>
+              )}
+            </Button>
+          </div>
+
           <Avatar className="w-24 h-24 mx-auto mt-4 mb-4">
             <AvatarImage src={contractData.icon} alt={contractData.title} />
             <AvatarFallback>{contractData.title.slice(0, 2)}</AvatarFallback>
@@ -184,14 +238,7 @@ export default function Container({
           >
             {contractData.description}
           </CardDescription>
-          <div
-            className={cn(
-              "absolute top-1 right-2 rounded-full overflow-hidden",
-              address ? "bg-white py-1" : "bg-white p-1"
-            )}
-          >
-            <w3m-button balance="hide" size="md" />
-          </div>
+
           {contractData.website && (
             <Link
               href={contractData.website}

@@ -98,11 +98,23 @@ export default function Container({
       setTxStatus("success");
       setTimeout(() => {
         setResult(result);
-      }, 500);
+      }, 100);
     } catch (error) {
       console.error(error);
       setTxStatus("error");
     }
+  };
+
+  const handleOpen = (func: ExtendedAbiItem) => {
+    if (func.stateMutability === "view" && func.inputs.length === 0) {
+      handleSubmitReadableTx(func);
+    }
+  };
+
+  const handleRetry = () => {
+    setResult(null);
+    setTxHash(null);
+    setTxStatus("idle");
   };
 
   const handleClose = () => {
@@ -126,6 +138,7 @@ export default function Container({
           <Button
             className="w-full mb-2 flex justify-between items-center"
             disabled={writeable && !walletInfo}
+            onClick={() => handleOpen(func)}
           >
             <span>{func.name}</span>
             {writeable ? (
@@ -207,11 +220,30 @@ export default function Container({
                 </DrawerClose>
               </>
             ) : (
-              <div className="h-20 w-full flex flex-col items-center justify-center">
-                {!!result && <p className="text-white">{`${result}`}</p>}
+              <div className="min-h-20 w-full flex flex-col items-center justify-center">
+                {!!result && (
+                  <div className="w-full flex flex-col items-center justify-center gap-2 animate-fade-in">
+                    <p className="text-white">{`${result}`}</p>
+                    <Button
+                      className="w-full"
+                      onClick={() => {
+                        handleRetry();
+                        writeable
+                          ? handleSubmitWriteableTx(func)
+                          : handleSubmitReadableTx(func);
+                      }}
+                    >
+                      {writeable ? "Send Again" : "Request Again"}
+                    </Button>
+                  </div>
+                )}
                 {!!txHash && (
-                  <Link href={`${network.explorer}/tx/${txHash}`}>
-                    View on Explorer
+                  <Link
+                    className="animate-fade-in text-white"
+                    target="_blank"
+                    href={`${network.explorer}/tx/${txHash}`}
+                  >
+                    <Button className="w-full">View on Explorer</Button>
                   </Link>
                 )}
                 {!result && !txHash && (

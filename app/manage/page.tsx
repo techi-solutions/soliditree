@@ -6,25 +6,14 @@ import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { ArrowLeftIcon, Trash2Icon } from "lucide-react";
+import { ArrowLeftIcon } from "lucide-react";
 import { useAccount } from "wagmi";
 
-interface Page {
-  id: string;
-  name: string;
-  description: string;
-}
+// interface Page {
+//   id: string;
+//   name: string;
+//   description: string;
+// }
 
 export default function ManagePage() {
   const { address, chainId } = useAccount();
@@ -33,18 +22,18 @@ export default function ManagePage() {
   const [isValidContract, setIsValidContract] = useState(false);
   const [debouncedValidContract] = useDebounce(isValidContract, 300);
 
-  const [existingPages, setExistingPages] = useState<Page[]>([
-    { id: "1", name: "Page 1", description: "This is the first page" },
-    { id: "2", name: "Page 2", description: "This is the second page" },
-    { id: "3", name: "Page 3", description: "This is the third page" },
-    { id: "4", name: "Page 4", description: "This is the fourth page" },
-    { id: "5", name: "Page 5", description: "This is the fifth page" },
-    { id: "6", name: "Page 6", description: "This is the sixth page" },
-    { id: "7", name: "Page 7", description: "This is the seventh page" },
-    { id: "8", name: "Page 8", description: "This is the eighth page" },
-    { id: "9", name: "Page 9", description: "This is the ninth page" },
-    { id: "10", name: "Page 10", description: "This is the tenth page" },
-  ]);
+  //   const [existingPages, setExistingPages] = useState<Page[]>([
+  //     { id: "1", name: "Page 1", description: "This is the first page" },
+  //     { id: "2", name: "Page 2", description: "This is the second page" },
+  //     { id: "3", name: "Page 3", description: "This is the third page" },
+  //     { id: "4", name: "Page 4", description: "This is the fourth page" },
+  //     { id: "5", name: "Page 5", description: "This is the fifth page" },
+  //     { id: "6", name: "Page 6", description: "This is the sixth page" },
+  //     { id: "7", name: "Page 7", description: "This is the seventh page" },
+  //     { id: "8", name: "Page 8", description: "This is the eighth page" },
+  //     { id: "9", name: "Page 9", description: "This is the ninth page" },
+  //     { id: "10", name: "Page 10", description: "This is the tenth page" },
+  //   ]);
 
   const handleContractAddressChange = (
     e: React.ChangeEvent<HTMLInputElement>
@@ -54,10 +43,10 @@ export default function ManagePage() {
     setIsValidContract(true); // 300ms delay
   };
 
-  const handleDeletePage = (page: Page) => {
-    setExistingPages((prevPages) => prevPages.filter((p) => p.id !== page.id));
-    // setPageToDelete(null);
-  };
+  //   const handleDeletePage = (page: Page) => {
+  //     setExistingPages((prevPages) => prevPages.filter((p) => p.id !== page.id));
+  //     // setPageToDelete(null);
+  //   };
 
   if (!address) {
     return (
@@ -76,7 +65,7 @@ export default function ManagePage() {
   }
 
   return (
-    <div className="container mx-auto p-4 space-y-6 text-black max-w-3xl relative pb-20 text-white">
+    <div className="min-h-screen container mx-auto p-4 space-y-6 text-black max-w-3xl relative pb-20 text-white">
       <div className="max-w-4xl text-center">
         <div className="mb-6 relative h-20 w-full">
           <Link href="/" className="absolute top-0 left-0 mt-4 ml-4">
@@ -106,7 +95,8 @@ export default function ManagePage() {
         <div className="mt-8 animate-fade-in-slow">
           <h3 className="text-2xl font-bold mb-4">Existing Pages</h3>
           <div className="flex flex-col space-y-4">
-            {existingPages.map((page) => (
+            <p>coming soon...</p>
+            {/* {existingPages.map((page) => (
               <div key={page.id} className="flex items-center space-x-2">
                 <Link href={`/${page.id}/edit`} className="flex-grow">
                   <div className="p-4 bg-white text-black rounded-md">
@@ -139,7 +129,7 @@ export default function ManagePage() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
-            ))}
+            ))} */}
           </div>
         </div>
       </div>

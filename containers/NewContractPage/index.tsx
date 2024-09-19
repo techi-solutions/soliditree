@@ -263,14 +263,10 @@ export default function NewContractPage({
       );
       console.log("pageId", pageId);
       setCreationStatus("success");
-      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}`;
+      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}?chainId=${chainId}`;
       console.log("pageAddress", pageAddress);
 
-      router.push(
-        `/new/${contractAddress}/success?pageAddress=${encodeURIComponent(
-          pageAddress
-        )}`
-      );
+      router.push(pageAddress);
       return;
     } catch (error) {
       console.error("Error creating page:", error);

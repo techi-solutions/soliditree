@@ -27,7 +27,10 @@ import {
   EyeIcon,
   GitPullRequestCreateArrow,
   Loader2,
+  PencilIcon,
   ShareIcon,
+  StarIcon,
+  TrashIcon,
 } from "lucide-react"; // Import the Wallet icon
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -42,15 +45,21 @@ import { Progress } from "@/components/ui/progress";
 import { hexToRgb } from "@/utils/colors";
 import { cn } from "@/lib/utils";
 import { useIsPortrait } from "@/hooks/screen";
+import { StarFilledIcon } from "@radix-ui/react-icons";
 
 export default function Container({
+  pageId,
+  owner,
   contractData,
   network,
 }: {
+  pageId: string;
+  owner: string;
   contractData: ContractPage;
   network: Network;
 }) {
   const { address } = useAccount();
+  const isOwner = address === owner;
 
   const [isCopied, setIsCopied] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState<{ [key: string]: boolean }>(
@@ -208,8 +217,32 @@ export default function Container({
           }}
         />
       )}
+      {isOwner && (
+        <div className="fixed top-0 left-0 h-12 w-full flex justify-between items-center space-x-2 px-6 bg-black z-50">
+          {pageId.startsWith("0x") ? (
+            <Button className="bg-white text-black">
+              Set page name <StarFilledIcon className="h-4 w-4 ml-2" />
+            </Button>
+          ) : (
+            <Button className="bg-white text-black">
+              Release page name <StarIcon className="h-4 w-4 ml-2" />
+            </Button>
+          )}
+          <div className="flex items-center space-x-2">
+            <Button variant="destructive">
+              Delete <TrashIcon className="h-4 w-4 ml-2" />
+            </Button>
+            <Button>
+              Edit <PencilIcon className="h-4 w-4 ml-2" />
+            </Button>
+          </div>
+        </div>
+      )}
       <Card
-        className="max-w-xl mx-auto w-full border-transparent m-2"
+        className={cn(
+          "max-w-xl mx-auto w-full border-transparent",
+          isOwner ? "m-10" : "m-2"
+        )}
         style={{
           backgroundColor: contractData.backgroundImage
             ? `rgba(${hexToRgb(colors.card)}, 0.8)`

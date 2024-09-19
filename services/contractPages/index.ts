@@ -74,6 +74,11 @@ export class ContractPagesService {
     return result as string;
   }
 
+  async getPageOwner(pageId: string) {
+    const result = await this.contract().read.getPageOwner([pageId]);
+    return result as string;
+  }
+
   async getAbiFromAddress(address: string) {
     console.log(address);
     const result = this.contract().abi;

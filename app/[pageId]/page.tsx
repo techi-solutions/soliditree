@@ -73,7 +73,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function NewContractPage({ params, searchParams }: Props) {
+export default async function Page({ params, searchParams }: Props) {
   const { pageId }: { pageId: string | undefined } = params;
   const chainId = Number(searchParams.chainId);
   if (!pageId) {
@@ -113,12 +113,17 @@ export default async function NewContractPage({ params, searchParams }: Props) {
     return <div>Page not found</div>;
   }
 
-  console.log("page.colors?.background", page.colors?.background);
+  const owner = await contractPages.getPageOwner(resolvedPageId);
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <meta name="theme-color" content={page.colors?.background ?? "#0f766e"} />
-      <Container contractData={page} network={network} />
+      <Container
+        pageId={resolvedPageId}
+        owner={owner}
+        contractData={page}
+        network={network}
+      />
     </Suspense>
   );
 }

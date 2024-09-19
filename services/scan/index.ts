@@ -7,6 +7,9 @@ export type ExtendedAbiItem = AbiFunction & {
   id: string;
   signature: string;
   selected: boolean;
+  link?: {
+    url: string;
+  };
 };
 
 export type ExtendedAbi = ExtendedAbiItem[];

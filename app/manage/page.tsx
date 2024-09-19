@@ -2,7 +2,6 @@
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useWalletInfo } from "@web3modal/wagmi/react";
 import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import Link from "next/link";
@@ -19,6 +18,7 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { ArrowLeftIcon, Trash2Icon } from "lucide-react";
+import { useAccount } from "wagmi";
 
 interface Page {
   id: string;
@@ -27,7 +27,7 @@ interface Page {
 }
 
 export default function ManagePage() {
-  const { walletInfo } = useWalletInfo();
+  const { address, chainId } = useAccount();
 
   const [contractAddress, setContractAddress] = useState("");
   const [isValidContract, setIsValidContract] = useState(false);
@@ -59,12 +59,12 @@ export default function ManagePage() {
     // setPageToDelete(null);
   };
 
-  if (!walletInfo) {
+  if (!address) {
     return (
       <div className="flex items-center justify-center min-h-screen text-white p-4">
         <div className="max-w-2xl text-center">
           <w3m-button
-            disabled={!!walletInfo}
+            disabled={!!address}
             balance="hide"
             size="md"
             label="Sign in 🚀"
@@ -96,7 +96,7 @@ export default function ManagePage() {
             value={contractAddress}
           />
           {debouncedValidContract && (
-            <Link href={`/new/${contractAddress}`}>
+            <Link href={`/new/${contractAddress}?chainId=${chainId}`}>
               <Button className="mt-4 animate-fade-in">Create Page</Button>
             </Link>
           )}

@@ -1,7 +1,7 @@
 import { Suspense } from "react";
 import NewContractPageContainer from "@/containers/NewContractPage";
 import IPFSService from "@/services/ipfs";
-import { ContractPage } from "@/services/contractPages";
+import { ContractPage, ContractPageColors } from "@/services/contractPages";
 import { NETWORKS } from "@/constants/networks";
 import { CHAINS } from "@/constants/chains";
 import { ExtendedAbi, ScanService } from "@/services/scan";
@@ -32,7 +32,11 @@ export default async function NewContractPage({
     throw new Error("ETHERSCAN_API_KEY is not set");
   }
 
-  const createPage = async (data: FormData, functions: ExtendedAbi) => {
+  const createPage = async (
+    data: FormData,
+    functions: ExtendedAbi,
+    colors: ContractPageColors
+  ) => {
     "use server";
 
     if (functions.length === 0) {
@@ -44,8 +48,8 @@ export default async function NewContractPage({
       process.env.IPFS_API_KEY as string
     );
 
-    console.log(data);
     const icon = data.get("icon") as File | undefined;
+    const backgroundImage = data.get("backgroundImage") as File | undefined;
 
     const uploadData: ContractPage = {
       chainId: Number(searchParams.chainId),
@@ -54,14 +58,20 @@ export default async function NewContractPage({
       description: data.get("description") as string,
       website: data.get("website") as string,
       icon: process.env.DEFAULT_ICON as string,
+      colors: colors,
       functions,
     };
 
     if (icon) {
       const iconHash = await ipfsService.uploadFile(icon);
-      console.log("iconHash", iconHash);
       uploadData.icon = `ipfs://${iconHash}`;
     }
+
+    if (backgroundImage) {
+      const backgroundImageHash = await ipfsService.uploadFile(backgroundImage);
+      uploadData.backgroundImage = `ipfs://${backgroundImageHash}`;
+    }
+
     const hash = await ipfsService.uploadJSON(
       uploadData as unknown as Record<string, unknown>
     );

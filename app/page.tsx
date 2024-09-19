@@ -1,15 +1,14 @@
 "use client";
 
 import { Button } from "@/components/ui/button";
-import { useWalletInfo } from "@web3modal/wagmi/react";
+import { useAccount, useDisconnect } from "wagmi";
 import { LogOutIcon } from "lucide-react";
-import { useDisconnect } from "wagmi";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import Image from "next/image";
 
 export default function LandingPage() {
-  const { walletInfo } = useWalletInfo();
+  const { address } = useAccount();
   const { disconnect } = useDisconnect();
 
   return (
@@ -36,13 +35,13 @@ export default function LandingPage() {
         </p>
         <div className="animate-fade-in-slow flex items-center justify-center w-full font-color-white">
           <w3m-button
-            disabled={!!walletInfo}
+            disabled={!!address}
             balance="hide"
             size="md"
             label="Sign in 🚀"
             loadingLabel="Signing in ⏳"
           />
-          {walletInfo && (
+          {address && (
             <Button
               className="animate-fade-in w-10 h-10 p-0 rounded-full"
               onClick={() => disconnect()}
@@ -51,10 +50,10 @@ export default function LandingPage() {
             </Button>
           )}
         </div>
-        {walletInfo && (
+        {address && (
           <Separator className="my-8 animate-fade-in-slow bg-white" />
         )}
-        {walletInfo && (
+        {address && (
           <Link href="/manage">
             <Button className="mt-4 animate-fade-in">Manage Pages</Button>
           </Link>

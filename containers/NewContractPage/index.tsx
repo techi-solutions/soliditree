@@ -2,7 +2,12 @@
 
 import { useState, useRef, useEffect } from "react";
 import { z } from "zod";
-import { useForm } from "react-hook-form";
+import {
+  FieldErrors,
+  useForm,
+  UseFormRegister,
+  UseFormSetValue,
+} from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DragDropContext,
@@ -24,6 +29,8 @@ import {
   Pencil,
   ImageIcon,
   Loader2,
+  Trash2Icon,
+  PlusIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
@@ -33,7 +40,7 @@ import {
   QuestionMarkCircledIcon,
 } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
-import { ExtendedAbi } from "@/services/scan";
+import { ExtendedAbi, ExtendedAbiItem } from "@/services/scan";
 import Image from "next/image";
 import { ContractPagesCreatePage } from "@/services/contractPages/client";
 import { Progress } from "@/components/ui/progress";
@@ -42,6 +49,18 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+  Drawer,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { generateRandomString } from "@/utils/random";
+import { keccak256, stringToBytes } from "viem";
+import { HexColorPicker } from "react-colorful";
+import { ContractPageColors } from "@/services/contractPages";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -56,9 +75,77 @@ const formSchema = z.object({
   description: z.string().min(1, "Provide a short description of your page"),
   icon: z.instanceof(File).optional(),
   website: z.union([z.string().url(), z.string().length(0)]).optional(),
+  backgroundImage: z.instanceof(File).optional(),
+  colors: z.object({
+    background: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+    card: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+    cardText: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+    button: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+    buttonText: z.string().regex(/^#[0-9A-Fa-f]{6}$/, "Invalid hex color"),
+  }),
 });
 
 export type CreatePageFormData = z.infer<typeof formSchema>;
+
+const ColorPickerInput = ({
+  name,
+  label,
+  register,
+  colors,
+  setColors,
+  setValue,
+  errors,
+}: {
+  name: keyof CreatePageFormData["colors"];
+  label: string;
+  register: UseFormRegister<CreatePageFormData>;
+  colors: CreatePageFormData["colors"];
+  setColors: (colors: CreatePageFormData["colors"]) => void;
+  setValue: UseFormSetValue<CreatePageFormData>;
+  errors: FieldErrors<CreatePageFormData>;
+}) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={name}>{label}</Label>
+      <div className="flex items-center space-x-2">
+        <Input
+          id={name}
+          {...register(`colors.${name}`)}
+          value={colors[name]}
+          onChange={(e) => {
+            const newColor = e.target.value;
+            setColors({ ...colors, [name]: newColor });
+            setValue(`colors.${name}`, newColor);
+          }}
+          className="text-input w-28"
+        />
+        <Popover open={isOpen} onOpenChange={setIsOpen}>
+          <PopoverTrigger asChild>
+            <Button
+              variant="outline"
+              className="w-10 h-10 p-0"
+              style={{ backgroundColor: colors[name] }}
+            />
+          </PopoverTrigger>
+          <PopoverContent className="w-auto p-3">
+            <HexColorPicker
+              color={colors[name]}
+              onChange={(newColor) => {
+                setColors({ ...colors, [name]: newColor });
+                setValue(`colors.${name}`, newColor);
+              }}
+            />
+          </PopoverContent>
+        </Popover>
+      </div>
+      {errors.colors?.[name] && (
+        <p className="text-red-500">{errors.colors[name]?.message}</p>
+      )}
+    </div>
+  );
+};
 
 export default function NewContractPage({
   chainId,
@@ -73,21 +160,41 @@ export default function NewContractPage({
   contractAddress: string;
   exists: boolean;
   abi: ExtendedAbi;
-  createPage: (formData: FormData, functions: ExtendedAbi) => Promise<string>;
+  createPage: (
+    formData: FormData,
+    functions: ExtendedAbi,
+    colors: ContractPageColors
+  ) => Promise<string>;
 }) {
   const selectedChainId = useChainId();
   const allFunctions: ExtendedAbi = abi ?? [];
   const [functions, setFunctions] = useState<ExtendedAbi>([...allFunctions]);
 
+  const linkNameRef = useRef<HTMLInputElement>(null);
+  const linkUrlRef = useRef<HTMLInputElement>(null);
+
   const router = useRouter();
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [iconFile, setIconFile] = useState<File | null>(null);
+  const [iconObjectUrl, setIconObjectUrl] = useState<string | null>(null);
+
+  const backgroundImageRef = useRef<HTMLInputElement>(null);
+  const [backgroundObjectUrl, setBackgroundObjectUrl] = useState<string | null>(
+    null
+  );
 
   const [creationStatus, setCreationStatus] = useState<
     "idle" | "approval" | "uploading" | "creating" | "success" | "error"
   >("idle");
 
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+
+  const [colors, setColors] = useState({
+    background: "#10b77f",
+    card: "#10b77f",
+    cardText: "#FFFFFF",
+    button: "#489587",
+    buttonText: "#FFFFFF",
+  });
 
   useEffect(() => {
     if (
@@ -102,8 +209,12 @@ export default function NewContractPage({
     register,
     handleSubmit,
     formState: { errors },
+    setValue,
   } = useForm<CreatePageFormData>({
     resolver: zodResolver(formSchema),
+    defaultValues: {
+      colors: colors,
+    },
   });
 
   const onSubmit = async (data: CreatePageFormData) => {
@@ -114,9 +225,22 @@ export default function NewContractPage({
       formData.append(key, value as string);
     });
 
-    // Append the file if it exists
-    if (iconFile) {
-      formData.append("icon", iconFile);
+    // Append the icon file if it exists
+    if (
+      fileInputRef.current &&
+      fileInputRef.current.files &&
+      fileInputRef.current.files[0]
+    ) {
+      formData.append("icon", fileInputRef.current.files[0]);
+    }
+
+    // Append the background image file if it exists
+    if (
+      backgroundImageRef.current &&
+      backgroundImageRef.current.files &&
+      backgroundImageRef.current.files[0]
+    ) {
+      formData.append("backgroundImage", backgroundImageRef.current.files[0]);
     }
 
     try {
@@ -128,8 +252,7 @@ export default function NewContractPage({
 
       setCreationStatus("uploading");
 
-      const hash = await createPage(formData, selectedFunctions);
-      console.log("hash", hash);
+      const hash = await createPage(formData, selectedFunctions, colors);
 
       setCreationStatus("approval");
 
@@ -159,14 +282,40 @@ export default function NewContractPage({
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const url = iconObjectUrl;
+
     const file = event.target.files?.[0];
     if (file && file.type === "image/svg+xml") {
-      setIconFile(file);
+      setIconObjectUrl(URL.createObjectURL(file));
     } else {
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
-      setIconFile(null);
+      setIconObjectUrl(null);
+    }
+
+    if (url) {
+      URL.revokeObjectURL(url);
+    }
+  };
+
+  const handleBackgroundImageChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const url = backgroundObjectUrl;
+
+    const file = event.target.files?.[0];
+    if (file) {
+      setBackgroundObjectUrl(URL.createObjectURL(file));
+    } else {
+      if (backgroundImageRef.current) {
+        backgroundImageRef.current.value = "";
+      }
+      setBackgroundObjectUrl(null);
+    }
+
+    if (url) {
+      URL.revokeObjectURL(url);
     }
   };
 
@@ -216,6 +365,27 @@ export default function NewContractPage({
     if (close) {
       setOpenPopoverId(null); // Close the popover
     }
+  };
+
+  const handleAddLink = (name: string, url: string) => {
+    const link: ExtendedAbiItem = {
+      id: `link(${url}) (${generateRandomString(4)})`,
+      signature: keccak256(stringToBytes(`link(${url})`)),
+      name,
+      link: {
+        url,
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([link, ...functions]);
+  };
+
+  const handleDeleteFunction = (id: string) => {
+    setFunctions(functions.filter((func) => func.id !== id));
   };
 
   console.log("chainId", chainId);
@@ -329,9 +499,9 @@ export default function NewContractPage({
                 style={{ paddingTop: 5 }}
               />
               <div className="absolute" style={{ top: 2, left: 2 }}>
-                {iconFile ? (
+                {iconObjectUrl ? (
                   <Image
-                    src={URL.createObjectURL(iconFile)}
+                    src={iconObjectUrl}
                     alt="Icon"
                     width={24}
                     height={24}
@@ -357,6 +527,150 @@ export default function NewContractPage({
             {errors.website && (
               <p className="text-red-500">{errors.website.message}</p>
             )}
+          </div>
+
+          <div>
+            <Label htmlFor="backgroundImage">Background Image (optional)</Label>
+            <div className="relative">
+              <Input
+                id="backgroundImage"
+                type="file"
+                accept=".png,.jpg,.jpeg"
+                ref={backgroundImageRef}
+                onChange={handleBackgroundImageChange}
+                className="pl-8 text-input"
+                style={{ paddingTop: 5 }}
+              />
+              <div
+                className="absolute flex items-center justify-center overflow-hidden rounded-sm"
+                style={{
+                  top: 4,
+                  left: 4,
+                  width: 28,
+                  height: 28,
+                }}
+              >
+                {backgroundObjectUrl ? (
+                  <Image
+                    src={backgroundObjectUrl}
+                    alt="Background image"
+                    width={28}
+                    height={28}
+                    objectFit="cover"
+                    objectPosition="center"
+                    className="h-full w-full overflow-hidden object-cover object-center"
+                  />
+                ) : (
+                  <ImageIcon className="h-8 w-8 text-muted-foreground" />
+                )}
+              </div>
+            </div>
+            {errors.backgroundImage && (
+              <p className="text-red-500">{errors.backgroundImage.message}</p>
+            )}
+          </div>
+
+          <div className="w-full space-y-4 flex flex-col">
+            <h3 className="text-lg font-semibold">Color Settings</h3>
+            <div className="flex space-x-4">
+              <div className="flex flex-col space-y-2">
+                <ColorPickerInput
+                  name="background"
+                  label="Background Color"
+                  register={register}
+                  colors={colors}
+                  setColors={setColors}
+                  setValue={setValue}
+                  errors={errors}
+                />
+                <ColorPickerInput
+                  name="card"
+                  label="Card Color"
+                  register={register}
+                  colors={colors}
+                  setColors={setColors}
+                  setValue={setValue}
+                  errors={errors}
+                />
+                <ColorPickerInput
+                  name="cardText"
+                  label="Card Text Color"
+                  register={register}
+                  colors={colors}
+                  setColors={setColors}
+                  setValue={setValue}
+                  errors={errors}
+                />
+                <ColorPickerInput
+                  name="button"
+                  label="Button Color"
+                  register={register}
+                  colors={colors}
+                  setColors={setColors}
+                  setValue={setValue}
+                  errors={errors}
+                />
+                <ColorPickerInput
+                  name="buttonText"
+                  label="Button Text Color"
+                  register={register}
+                  colors={colors}
+                  setColors={setColors}
+                  setValue={setValue}
+                  errors={errors}
+                />
+              </div>
+              <div
+                className="flex flex-1 rounded-sm"
+                style={{
+                  backgroundColor: colors.background,
+                  backgroundImage: backgroundObjectUrl
+                    ? `url(${backgroundObjectUrl})`
+                    : undefined,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }}
+              >
+                <div className="flex flex-1 flex-col justify-center items-center">
+                  <div
+                    className="flex flex-col justify-start items-center rounded-xl h-60 w-40 p-4"
+                    style={{ backgroundColor: colors.card }}
+                  >
+                    <p style={{ color: colors.cardText }}>Title</p>
+                    <p style={{ color: colors.cardText }}>Description</p>
+                    <div className="flex flex-1 w-full flex-col mt-4 space-y-2">
+                      <Button
+                        className="w-full"
+                        style={{
+                          backgroundColor: colors.button,
+                          color: colors.buttonText,
+                        }}
+                      >
+                        Button
+                      </Button>
+                      <Button
+                        className="w-full"
+                        style={{
+                          backgroundColor: colors.button,
+                          color: colors.buttonText,
+                        }}
+                      >
+                        Button
+                      </Button>
+                      <Button
+                        className="w-full"
+                        style={{
+                          backgroundColor: colors.button,
+                          color: colors.buttonText,
+                        }}
+                      >
+                        Button
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
 
           <div className="z-50 fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
@@ -411,7 +725,54 @@ export default function NewContractPage({
         <div>
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold mb-2">Functions</h2>
-            <Button onClick={handleToggleSelectAll}>Select All</Button>
+            <div className="flex space-x-2">
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button>
+                    Add Link <PlusIcon className="h-4 w-4 ml-2" />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <DrawerHeader>
+                    <DrawerTitle>Add Link</DrawerTitle>
+                    <DrawerDescription>
+                      Create a new link for your contract page.
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="linkName">Link Name</Label>
+                      <Input
+                        id="linkName"
+                        placeholder="Enter link name"
+                        className="text-white"
+                        ref={linkNameRef}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="linkUrl">URL</Label>
+                      <Input
+                        id="linkUrl"
+                        placeholder="Enter URL"
+                        ref={linkUrlRef}
+                        className="text-white"
+                      />
+                    </div>
+                    <Button
+                      onClick={() => {
+                        const linkName = linkNameRef.current?.value || "";
+                        const linkUrl = linkUrlRef.current?.value || "";
+                        handleAddLink(linkName, linkUrl);
+                      }}
+                      className="w-full"
+                    >
+                      Create Link
+                    </Button>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+              <Button onClick={handleToggleSelectAll}>Select All</Button>
+            </div>
           </div>
           <DragDropContext onDragEnd={onDragEnd}>
             <Droppable droppableId="functions">
@@ -498,7 +859,17 @@ export default function NewContractPage({
                               </span>
                             </div>
                           </div>
-                          <div className="space-x-2">
+                          <div className="flex items-center space-x-2">
+                            {func.link && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteFunction(func.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                              >
+                                <Trash2Icon className="h-4 w-4" />
+                              </Button>
+                            )}
                             <div
                               className={cn(
                                 "p-4 hover:bg-white hover:text-black rounded-full cursor-pointer",

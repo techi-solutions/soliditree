@@ -6,7 +6,7 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
-import { config } from "../walletConnect/config";
+import { wagmiAdapter } from "../walletConnect/config";
 import { AbiItem } from "viem";
 
 export const ContractWriteFunction = async (
@@ -19,7 +19,7 @@ export const ContractWriteFunction = async (
 ) => {
   const valueBigInt = value ? BigInt(parseFloat(value) * 1e18) : undefined;
 
-  const { request } = await simulateContract(config, {
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi,
     functionName,
@@ -27,12 +27,12 @@ export const ContractWriteFunction = async (
     value: valueBigInt,
   });
 
-  const result = await writeContract(config, request);
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
   console.log("result", result);
 
   onCreate();
 
-  const receipt = await waitForTransactionReceipt(config, {
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,
   });
   console.log("receipt", receipt);
@@ -49,7 +49,7 @@ export const ContractReadFunction = async (
   args: unknown[],
   abi: AbiItem[]
 ) => {
-  const result = await readContract(config, {
+  const result = await readContract(wagmiAdapter.wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi,
     functionName,

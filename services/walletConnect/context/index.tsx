@@ -1,47 +1,71 @@
-// context/index.tsx
-
 "use client";
 
-import React, { ReactNode } from "react";
-import { config, projectId } from "@/services/walletConnect/config";
-
-import { createWeb3Modal } from "@web3modal/wagmi/react";
-
+import {
+  wagmiAdapter,
+  projectId,
+  networks,
+} from "@/services/walletConnect/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { createAppKit } from "@reown/appkit/react";
+import React, { type ReactNode } from "react";
+import { cookieToInitialState, WagmiProvider, type Config } from "wagmi";
+import Favicon from "@/public/favicon.ico";
 
-import { State, WagmiProvider } from "wagmi";
-
-// Setup queryClient
+// Set up queryClient
 const queryClient = new QueryClient();
 
-if (!projectId) throw new Error("Project ID is not defined");
+if (!projectId) {
+  throw new Error("Project ID is not defined");
+}
 
-// Create modal
-createWeb3Modal({
-  wagmiConfig: config,
+// Create a metadata object
+const metadata = {
+  name: "Soliditree",
+  description: "An interface for your smart contracts",
+  url: "https://soliditree.xyz", // origin must match your domain & subdomain
+  icons: [Favicon.src],
+};
+
+// Create the modal
+createAppKit({
+  adapters: [wagmiAdapter],
   projectId,
-  enableSwaps: false,
-  enableAnalytics: false,
-  enableOnramp: false,
-  themeMode: "dark",
+  networks,
+  defaultNetwork: networks[0],
+  metadata: metadata,
+  features: {
+    analytics: false,
+    swaps: false,
+    onramp: false,
+  },
+  themeMode: "light",
   themeVariables: {
-    "--w3m-accent": "hsl(var(--primary))",
-    "--w3m-border-radius-master": "0.5rem",
-    "--w3m-font-size-master": "1rem",
-    "--w3m-color-mix": "white",
+    "--w3m-accent": "#489587",
+    "--w3m-color-mix": "#00BB7F",
+    "--w3m-color-mix-strength": 40,
   },
 });
 
-export default function Web3ModalProvider({
+function ContextProvider({
   children,
-  initialState,
+  cookies,
 }: {
   children: ReactNode;
-  initialState?: State;
+  cookies: string | null;
 }) {
+  const initialState = cookieToInitialState(
+    wagmiAdapter.wagmiConfig as Config,
+    cookies
+  );
+
   return (
-    <WagmiProvider config={config} initialState={initialState}>
+    <WagmiProvider
+      config={wagmiAdapter.wagmiConfig as Config}
+      initialState={initialState}
+    >
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );
 }
+
+export default ContextProvider;

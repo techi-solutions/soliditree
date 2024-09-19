@@ -10,6 +10,14 @@ import { gnosis } from "viem/chains";
 import ContractPagesABI from "@/abi/ContractPages.abi.json";
 import { ExtendedAbi } from "../scan";
 
+export interface ContractPageColors {
+  background: string;
+  card: string;
+  cardText: string;
+  button: string;
+  buttonText: string;
+}
+
 export interface ContractPage {
   chainId: number;
   contractAddress: string;
@@ -17,6 +25,8 @@ export interface ContractPage {
   description: string;
   website?: string;
   icon: string;
+  backgroundImage?: string;
+  colors?: ContractPageColors;
   functions: ExtendedAbi;
 }
 

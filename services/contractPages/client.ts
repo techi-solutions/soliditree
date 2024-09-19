@@ -7,7 +7,7 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
-import { config } from "../walletConnect/config";
+import { wagmiAdapter } from "../walletConnect/config";
 import { extractEventData } from "@/utils/events";
 import { AbiItem, stringToHex } from "viem";
 
@@ -18,19 +18,19 @@ export const ContractPagesCreatePage = async (
 ) => {
   const contentHashBytes = stringToHex(contentHash);
 
-  const { request } = await simulateContract(config, {
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi: ContractPagesABI.abi,
     functionName: "createPage",
     args: [contractAddress, contentHashBytes],
   });
 
-  const result = await writeContract(config, request);
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
   console.log("result", result);
 
   onCreating();
 
-  const receipt = await waitForTransactionReceipt(config, {
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,
   });
   console.log("receipt", receipt);

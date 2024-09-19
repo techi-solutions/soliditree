@@ -51,6 +51,7 @@ import {
 } from "@/components/ui/popover";
 import {
   Drawer,
+  DrawerClose,
   DrawerContent,
   DrawerDescription,
   DrawerHeader,
@@ -383,11 +384,6 @@ export default function Container({
   const handleDeleteFunction = (id: string) => {
     setFunctions(functions.filter((func) => func.id !== id));
   };
-
-  console.log("chainId", chainId);
-  console.log("contractAddress", contractAddress);
-  console.log("network", network);
-  console.log(allFunctions);
 
   const supportedChain = chains.some((chain) => chain.id === selectedChainId);
 
@@ -754,16 +750,18 @@ export default function Container({
                         className="text-white"
                       />
                     </div>
-                    <Button
-                      onClick={() => {
-                        const linkName = linkNameRef.current?.value || "";
-                        const linkUrl = linkUrlRef.current?.value || "";
-                        handleAddLink(linkName, linkUrl);
-                      }}
-                      className="w-full"
-                    >
-                      Create Link
-                    </Button>
+                    <DrawerClose asChild>
+                      <Button
+                        onClick={() => {
+                          const linkName = linkNameRef.current?.value || "";
+                          const linkUrl = linkUrlRef.current?.value || "";
+                          handleAddLink(linkName, linkUrl);
+                        }}
+                        className="w-full"
+                      >
+                        Create Link
+                      </Button>
+                    </DrawerClose>
                   </div>
                 </DrawerContent>
               </Drawer>

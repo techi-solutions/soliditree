@@ -9,15 +9,14 @@ import {
   CardContent,
 } from "@/components/ui/card";
 import {
-  Drawer,
-  DrawerClose,
-  DrawerContent,
-  DrawerDescription,
-  DrawerFooter,
-  DrawerHeader,
-  DrawerTitle,
-  DrawerTrigger,
-} from "@/components/ui/drawer";
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContractPage, ContractPageColors } from "@/services/contractPages";
@@ -42,6 +41,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { hexToRgb } from "@/utils/colors";
 import { cn } from "@/lib/utils";
+import { useIsPortrait } from "@/hooks/screen";
 
 export default function Container({
   contractData,
@@ -53,6 +53,11 @@ export default function Container({
   const { address } = useAccount();
 
   const [isCopied, setIsCopied] = useState(false);
+  const [isSheetOpen, setIsSheetOpen] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+
+  const isPortrait = useIsPortrait();
 
   // Fix for a development mode bug where UI is rendered on the server with missing values
   const [isClient, setIsClient] = useState(false);
@@ -136,6 +141,7 @@ export default function Container({
   };
 
   const handleOpen = (func: ExtendedAbiItem) => {
+    setIsSheetOpen({ [func.id]: true });
     if (func.stateMutability === "view" && func.inputs.length === 0) {
       handleSubmitReadableTx(func);
     }
@@ -146,7 +152,13 @@ export default function Container({
     setTxStatus("idle");
   };
 
-  const handleClose = () => {
+  const handleClose = (nextState: boolean) => {
+    console.log("nextState", nextState);
+    setIsSheetOpen({});
+    if (nextState) {
+      return;
+    }
+
     setResult(null);
     setTxHash(null);
     setTxStatus("idle");
@@ -172,6 +184,9 @@ export default function Container({
         return;
       } catch (error) {
         console.error("Error sharing:", error);
+        if (error instanceof DOMException && error.name === "AbortError") {
+          return;
+        }
       }
     }
 
@@ -212,7 +227,7 @@ export default function Container({
             <w3m-button balance="hide" size="md" />
           </div>
           <div className="absolute top-1 left-2 rounded-full overflow-hidden">
-            <Button onClick={handleShareLink}>
+            <Button variant="outline" onClick={handleShareLink}>
               {isCopied ? (
                 <>
                   Copied! <CheckIcon className="h-4 w-4 ml-2" />
@@ -252,7 +267,7 @@ export default function Container({
           )}
         </CardHeader>
         <CardContent>
-          {contractData.functions.map((func) => {
+          {contractData.functions.map((func, index) => {
             const writeable =
               func.stateMutability === "payable" ||
               func.stateMutability === "nonpayable";
@@ -276,11 +291,8 @@ export default function Container({
 
             return (
               <div key={func.id} className="mb-4">
-                <Drawer
-                  onOpenChange={(open) => !open && handleClose()}
-                  onClose={handleClose}
-                >
-                  <DrawerTrigger asChild>
+                <Sheet onOpenChange={handleClose} open={isSheetOpen[func.id]}>
+                  <SheetTrigger asChild>
                     <Button
                       className="w-full mb-2 flex justify-between items-center"
                       style={{
@@ -297,16 +309,19 @@ export default function Container({
                         <EyeIcon className="h-4 w-4 ml-2" />
                       )}
                     </Button>
-                  </DrawerTrigger>
-                  <DrawerContent className="flex flex-col items-center">
-                    <DrawerHeader className="max-w-xl w-full justify-center">
-                      <DrawerTitle className="text-white text-center">
+                  </SheetTrigger>
+                  <SheetContent
+                    side={isPortrait ? "top" : "bottom"}
+                    className="flex flex-col items-center text-white"
+                  >
+                    <SheetHeader className="max-w-xl w-full justify-center">
+                      <SheetTitle className="text-white text-center">
                         {func.name}
-                      </DrawerTitle>
-                      <DrawerDescription className="text-center">
+                      </SheetTitle>
+                      <SheetDescription className="text-center">
                         {func.id}
-                      </DrawerDescription>
-                    </DrawerHeader>
+                      </SheetDescription>
+                    </SheetHeader>
                     <div className="p-4 max-w-xl w-full">
                       {func.stateMutability === "payable" && (
                         <div className="mt-2">
@@ -319,6 +334,7 @@ export default function Container({
                           <Input
                             id={`${func.id}-value`}
                             className="text-white"
+                            autoFocus={index === 0}
                             type="number"
                             step="0.000000000000000001"
                             min="0"
@@ -344,6 +360,7 @@ export default function Container({
                             <Input
                               id={`${func.id}-${input.name}`}
                               type="text"
+                              autoFocus={index === 0}
                               className="text-white"
                               placeholder={input.type}
                               value={functionArgs[func.id]?.[input.name!] || ""}
@@ -359,7 +376,7 @@ export default function Container({
                           </div>
                         ))}
                     </div>
-                    <DrawerFooter className="flex justify-center max-w-xl w-full">
+                    <div className="flex flex-col gap-2 justify-center max-w-xl w-full">
                       {txStatus === "idle" || txStatus === "error" ? (
                         <>
                           <Button
@@ -371,11 +388,6 @@ export default function Container({
                           >
                             {writeable ? "Send Transaction" : "Request Data"}
                           </Button>
-                          <DrawerClose asChild>
-                            <Button variant="outline" className="text-white">
-                              Cancel
-                            </Button>
-                          </DrawerClose>
                         </>
                       ) : (
                         <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
@@ -445,9 +457,9 @@ export default function Container({
                           )}
                         </div>
                       )}
-                    </DrawerFooter>
-                  </DrawerContent>
-                </Drawer>
+                    </div>
+                  </SheetContent>
+                </Sheet>
               </div>
             );
           })}

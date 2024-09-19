@@ -39,6 +39,7 @@ import {
 } from "@/services/contracts/client";
 import { Progress } from "@/components/ui/progress";
 import { hexToRgb } from "@/utils/colors";
+import { cn } from "@/lib/utils";
 
 export default function Container({
   contractData,
@@ -179,7 +180,12 @@ export default function Container({
           >
             {contractData.description}
           </CardDescription>
-          <div className="absolute top-1 right-2 rounded-full overflow-hidden bg-white py-1">
+          <div
+            className={cn(
+              "absolute top-1 right-2 rounded-full overflow-hidden",
+              address ? "bg-white py-1" : "bg-white p-1"
+            )}
+          >
             <w3m-button balance="hide" size="md" />
           </div>
           {contractData.website && (

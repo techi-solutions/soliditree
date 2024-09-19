@@ -87,6 +87,7 @@ export default function Container({
       setTxStatus("creating");
 
       const receipt = await ContractWriteFunction(
+        network,
         contractData.contractAddress,
         func.name,
         func.inputs.map((input) => functionArgs[func.id]?.[input.name!] || ""),
@@ -98,6 +99,9 @@ export default function Container({
           ? functionArgs[func.id]?.value || "0"
           : undefined
       );
+      if (!receipt) {
+        throw new Error("Transaction failed");
+      }
 
       setTxStatus("success");
       setTxHash(receipt.transactionHash);
@@ -111,6 +115,7 @@ export default function Container({
     try {
       setTxStatus("requesting");
       const result = await ContractReadFunction(
+        network,
         contractData.contractAddress,
         func.name,
         func.inputs.map((input) => functionArgs[func.id]?.[input.name!] || ""),
@@ -133,7 +138,6 @@ export default function Container({
   };
 
   const handleRetry = () => {
-    setResult(null);
     setTxHash(null);
     setTxStatus("idle");
   };
@@ -327,10 +331,13 @@ export default function Container({
                           </DrawerClose>
                         </>
                       ) : (
-                        <div className="min-h-20 w-full flex flex-col items-center justify-center">
+                        <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
                           {!!result && (
-                            <div className="w-full flex flex-col items-center justify-center gap-2 animate-fade-in">
-                              <p className="text-white">{`${result}`}</p>
+                            <div className="max-w-xl w-full flex flex-col items-center justify-center gap-2 animate-fade-in overflow-x-hidden">
+                              <Label className="text-white">Result</Label>
+                              <p className="text-black break-words whitespace-normal overflow-y-auto w-full p-2 bg-white rounded-md">
+                                {`${result}`}
+                              </p>
                               <Button
                                 className="w-full"
                                 onClick={() => {
@@ -340,7 +347,10 @@ export default function Container({
                                     : handleSubmitReadableTx(func);
                                 }}
                               >
-                                {writeable ? "Send Again" : "Request Again"}
+                                {writeable ? "Send Again" : "Request Again"}{" "}
+                                {txStatus === "requesting" && (
+                                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                )}
                               </Button>
                             </div>
                           )}

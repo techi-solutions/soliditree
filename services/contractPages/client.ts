@@ -7,15 +7,22 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
-import { wagmiAdapter } from "../walletConnect/config";
+import { networks, wagmiAdapter } from "../walletConnect/config";
 import { extractEventData } from "@/utils/events";
-import { AbiItem, stringToHex } from "viem";
+import { AbiItem, parseEther, stringToHex } from "viem";
 
 export const ContractPagesCreatePage = async (
   contractAddress: string,
   contentHash: string,
   onCreating: () => void
 ) => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    return;
+  }
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
+
   const contentHashBytes = stringToHex(contentHash);
 
   const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
@@ -59,4 +66,41 @@ export const ContractPagesCreatePage = async (
   console.log("eventData", eventData);
 
   return pageId;
+};
+
+export const ContractPagesDonate = async (
+  contractAddress: string,
+  amount: string,
+  onCreating: () => void
+) => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    return;
+  }
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
+
+  const ethersAmount = parseEther(amount);
+
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
+    address: contractAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "donate",
+    value: ethersAmount,
+  });
+
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
+  console.log("result", result);
+
+  onCreating();
+
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
+    hash: result,
+  });
+  console.log("receipt", receipt);
+  if (receipt.status !== "success") {
+    throw new Error("Transaction failed");
+  }
+
+  return receipt;
 };

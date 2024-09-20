@@ -26,6 +26,7 @@ import {
   ExternalLinkIcon,
   EyeIcon,
   GitPullRequestCreateArrow,
+  HeartIcon,
   Loader2,
   PencilIcon,
   ShareIcon,
@@ -45,7 +46,8 @@ import { Progress } from "@/components/ui/progress";
 import { hexToRgb } from "@/utils/colors";
 import { cn } from "@/lib/utils";
 import { useIsPortrait } from "@/hooks/screen";
-import { StarFilledIcon } from "@radix-ui/react-icons";
+import { HeartFilledIcon, StarFilledIcon } from "@radix-ui/react-icons";
+import { ContractPagesDonate } from "@/services/contractPages/client";
 
 export default function Container({
   usesReservedName,
@@ -86,6 +88,8 @@ export default function Container({
     "idle" | "approval" | "requesting" | "creating" | "success" | "error"
   >("idle");
 
+  const [donateValue, setDonateValue] = useState<string>("0");
+
   const [txHash, setTxHash] = useState<string | null>(null);
   const [result, setResult] = useState<unknown | null>(null);
 
@@ -102,7 +106,7 @@ export default function Container({
 
   const handleSubmitWriteableTx = async (func: ExtendedAbiItem) => {
     try {
-      setTxStatus("creating");
+      setTxStatus("approval");
 
       const receipt = await ContractWriteFunction(
         network,
@@ -143,6 +147,29 @@ export default function Container({
       setTimeout(() => {
         setResult(result);
       }, 100);
+    } catch (error) {
+      console.error(error);
+      setTxStatus("error");
+    }
+  };
+
+  const handleDonate = async () => {
+    try {
+      setTxStatus("approval");
+
+      const receipt = await ContractPagesDonate(
+        contractData.contractAddress,
+        donateValue,
+        () => {
+          setTxStatus("creating");
+        }
+      );
+      if (!receipt) {
+        throw new Error("Transaction failed");
+      }
+
+      setTxStatus("success");
+      setTxHash(receipt.transactionHash);
     } catch (error) {
       console.error(error);
       setTxStatus("error");
@@ -238,6 +265,105 @@ export default function Container({
           </div>
         </div>
       )}
+      <div className="fixed bottom-2 right-2 space-x-2">
+        <Link
+          href={`${network.explorer}/address/${contractData.contractAddress}`}
+          target="_blank"
+        >
+          <Button variant="outline" className="text-white">
+            View on Explorer <ExternalLinkIcon className="h-4 w-4 ml-2" />
+          </Button>
+        </Link>
+        <Sheet>
+          <SheetTrigger>
+            <Button className="bg-white text-black">
+              Donate{" "}
+              <HeartFilledIcon className="h-4 w-4 ml-2 text-red-500 animate-pulse" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side={isPortrait ? "top" : "bottom"}
+            className="flex flex-col items-center text-white"
+          >
+            <div className="max-w-xl w-full flex flex-col items-center justify-center text-white">
+              {!!txHash ? (
+                <HeartFilledIcon className="h-4 w-4 ml-2 text-red-500 animate-pulse" />
+              ) : (
+                <HeartIcon className="h-4 w-4 ml-2 text-red-500 animate-pulse" />
+              )}
+              <p>{!!txHash ? "Donation received! 🎉" : "Donate to the page"}</p>
+              <div className="flex flex-col gap-2 justify-center max-w-xl w-full space-y-2">
+                {txStatus === "idle" || txStatus === "error" ? (
+                  <>
+                    <Label htmlFor={`donate-value`} className="text-white">
+                      Value (in {network.symbol})
+                    </Label>
+                    <Input
+                      id={`donate-value`}
+                      className="text-white"
+                      autoFocus
+                      type="number"
+                      step="0.000000000000000001"
+                      min="0"
+                      placeholder="0.0"
+                      value={donateValue}
+                      onChange={(e) => setDonateValue(e.target.value)}
+                    />
+                    <Button onClick={handleDonate}>Donate</Button>
+                  </>
+                ) : (
+                  <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
+                    {!!txHash && (
+                      <Link
+                        className="animate-fade-in text-white"
+                        target="_blank"
+                        href={`${network.explorer}/tx/${txHash}`}
+                      >
+                        <Button className="w-full">
+                          View on Explorer{" "}
+                          <ExternalLinkIcon className="h-4 w-4 ml-2" />
+                        </Button>
+                      </Link>
+                    )}
+                    {!txHash && (
+                      <>
+                        <p className="text-sm text-muted-foreground">
+                          {txStatus === "approval"
+                            ? "Requesting to sign transaction 🔑"
+                            : txStatus === "creating"
+                            ? "Submitted 🚀"
+                            : txStatus === "success"
+                            ? "Successful 🎉"
+                            : txStatus === "requesting"
+                            ? "Requesting data 🔍"
+                            : "Failed ❌"}
+                        </p>
+                        <div className="w-full flex items-center justify-center">
+                          <Progress
+                            className="w-full text-white"
+                            value={
+                              txStatus === "approval" ||
+                              txStatus === "requesting"
+                                ? 33
+                                : txStatus === "creating"
+                                ? 66
+                                : txStatus === "success"
+                                ? 100
+                                : 0
+                            }
+                          />
+                          <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+            </div>
+          </SheetContent>
+        </Sheet>
+      </div>
+
       <Card
         className={cn(
           "max-w-xl mx-auto w-full border-transparent",
@@ -453,7 +579,8 @@ export default function Container({
                               href={`${network.explorer}/tx/${txHash}`}
                             >
                               <Button className="w-full">
-                                View on Explorer
+                                View on Explorer{" "}
+                                <ExternalLinkIcon className="h-4 w-4 ml-2" />
                               </Button>
                             </Link>
                           )}

@@ -7,7 +7,7 @@ import {
   writeContract,
 } from "@wagmi/core";
 import { networks, wagmiAdapter } from "../walletConnect/config";
-import { AbiItem } from "viem";
+import { AbiItem, parseEther } from "viem";
 import { Network } from "@/constants/networks";
 
 export const ContractWriteFunction = async (
@@ -23,8 +23,10 @@ export const ContractWriteFunction = async (
   if (!caipNetwork) {
     return;
   }
-  const valueBigInt = value ? BigInt(parseFloat(value) * 1e18) : undefined;
 
+  const valueBigInt = value ? parseEther(value) : undefined;
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
   const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi,

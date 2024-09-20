@@ -264,7 +264,7 @@ export default function Container({
       );
       console.log("pageId", pageId);
       setCreationStatus("success");
-      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}?chainId=${chainId}`;
+      const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}`;
       console.log("pageAddress", pageAddress);
 
       router.push(pageAddress);

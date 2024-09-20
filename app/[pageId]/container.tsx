@@ -48,6 +48,7 @@ import { cn } from "@/lib/utils";
 import { useIsPortrait } from "@/hooks/screen";
 import { HeartFilledIcon, StarFilledIcon } from "@radix-ui/react-icons";
 import { ContractPagesDonate } from "@/services/contractPages/client";
+import { formatArg } from "@/utils/formatting";
 
 export default function Container({
   usesReservedName,
@@ -108,11 +109,15 @@ export default function Container({
     try {
       setTxStatus("approval");
 
+      const formattedArgs = func.inputs.map((input) =>
+        formatArg(input.type, functionArgs[func.id]?.[input.name!] || "")
+      );
+
       const receipt = await ContractWriteFunction(
         network,
         contractData.contractAddress,
         func.name,
-        func.inputs.map((input) => functionArgs[func.id]?.[input.name!] || ""),
+        formattedArgs,
         [func],
         () => {
           setTxStatus("creating");
@@ -136,11 +141,16 @@ export default function Container({
   const handleSubmitReadableTx = async (func: ExtendedAbiItem) => {
     try {
       setTxStatus("requesting");
+
+      const formattedArgs = func.inputs.map((input) =>
+        formatArg(input.type, functionArgs[func.id]?.[input.name!] || "")
+      );
+
       const result = await ContractReadFunction(
         network,
         contractData.contractAddress,
         func.name,
-        func.inputs.map((input) => functionArgs[func.id]?.[input.name!] || ""),
+        formattedArgs,
         [func]
       );
       setTxStatus("success");

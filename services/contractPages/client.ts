@@ -33,14 +33,12 @@ export const ContractPagesCreatePage = async (
   });
 
   const result = await writeContract(wagmiAdapter.wagmiConfig, request);
-  console.log("result", result);
 
   onCreating();
 
   const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,
   });
-  console.log("receipt", receipt);
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
   }
@@ -62,8 +60,6 @@ export const ContractPagesCreatePage = async (
   if (!pageId) {
     throw new Error("No page id found");
   }
-
-  console.log("eventData", eventData);
 
   return pageId;
 };
@@ -90,14 +86,12 @@ export const ContractPagesDonate = async (
   });
 
   const result = await writeContract(wagmiAdapter.wagmiConfig, request);
-  console.log("result", result);
 
   onCreating();
 
   const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,
   });
-  console.log("receipt", receipt);
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
   }

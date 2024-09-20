@@ -265,7 +265,7 @@ export default function Container({
           </div>
         </div>
       )}
-      <div className="fixed bottom-2 right-2 space-x-2">
+      <div className="fixed bottom-2 right-2 space-x-2 z-50">
         <Link
           href={`${network.explorer}/address/${contractData.contractAddress}`}
           target="_blank"

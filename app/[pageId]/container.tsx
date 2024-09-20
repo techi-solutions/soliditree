@@ -245,7 +245,7 @@ export default function Container({
         />
       )}
       {isOwner && (
-        <div className="fixed top-0 left-0 h-12 w-full flex justify-between items-center space-x-2 px-6 bg-black z-50">
+        <div className="fixed top-0 left-0 w-full flex justify-between items-center space-x-2 px-6 py-2 z-50">
           {!usesReservedName ? (
             <Button className="bg-white text-black">
               Set page name <StarFilledIcon className="h-4 w-4 ml-2" />

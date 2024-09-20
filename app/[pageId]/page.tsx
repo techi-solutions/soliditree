@@ -8,13 +8,9 @@ import Favicon from "@/public/favicon.ico";
 
 type Props = {
   params: { pageId: string };
-  searchParams: { chainId: string };
 };
 
-export async function generateMetadata({
-  params,
-  searchParams,
-}: Props): Promise<Metadata> {
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { pageId }: { pageId: string | undefined } = params;
 
   const defaultMetadata: Metadata = {
@@ -24,20 +20,12 @@ export async function generateMetadata({
       icon: "/favicon.ico",
     },
   };
-
-  const chainId = Number(searchParams.chainId);
   if (!pageId) {
     return defaultMetadata;
   }
 
-  const network = NETWORKS[chainId];
+  const network = NETWORKS["100"];
   if (!network) {
-    return defaultMetadata;
-  }
-
-  const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
-
-  if (!apiKey) {
     return defaultMetadata;
   }
 
@@ -73,14 +61,13 @@ export async function generateMetadata({
   }
 }
 
-export default async function Page({ params, searchParams }: Props) {
+export default async function Page({ params }: Props) {
   const { pageId }: { pageId: string | undefined } = params;
-  const chainId = Number(searchParams.chainId);
   if (!pageId) {
     return <div>Page id is required</div>;
   }
 
-  const network = NETWORKS[chainId];
+  const network = NETWORKS["100"];
   if (!network) {
     return <div>Network not found</div>;
   }
@@ -113,16 +100,22 @@ export default async function Page({ params, searchParams }: Props) {
     return <div>Page not found</div>;
   }
 
+  const contractNetwork = NETWORKS[page.chainId];
+  if (!contractNetwork) {
+    return <div>Unsupported network</div>;
+  }
+
   const owner = await contractPages.getPageOwner(resolvedPageId);
+  const usesReservedName = !pageId.startsWith("0x");
 
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <meta name="theme-color" content={page.colors?.background ?? "#0f766e"} />
       <Container
-        pageId={resolvedPageId}
+        usesReservedName={usesReservedName}
         owner={owner}
         contractData={page}
-        network={network}
+        network={contractNetwork}
       />
     </Suspense>
   );

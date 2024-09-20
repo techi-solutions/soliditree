@@ -48,12 +48,12 @@ import { useIsPortrait } from "@/hooks/screen";
 import { StarFilledIcon } from "@radix-ui/react-icons";
 
 export default function Container({
-  pageId,
+  usesReservedName,
   owner,
   contractData,
   network,
 }: {
-  pageId: string;
+  usesReservedName: boolean;
   owner: string;
   contractData: ContractPage;
   network: Network;
@@ -219,7 +219,7 @@ export default function Container({
       )}
       {isOwner && (
         <div className="fixed top-0 left-0 h-12 w-full flex justify-between items-center space-x-2 px-6 bg-black z-50">
-          {pageId.startsWith("0x") ? (
+          {!usesReservedName ? (
             <Button className="bg-white text-black">
               Set page name <StarFilledIcon className="h-4 w-4 ml-2" />
             </Button>

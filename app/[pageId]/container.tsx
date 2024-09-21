@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Card,
   CardHeader,
@@ -50,27 +50,45 @@ import { HeartFilledIcon, StarFilledIcon } from "@radix-ui/react-icons";
 import {
   ContractPagesDonate,
   ContractPagesDestroyPage,
+  ContractPagesReserveName,
+  ContractPagesGetReservedName,
+  ContractPagesCalculateReservationCost,
 } from "@/services/contractPages/client";
 import { formatArg } from "@/utils/formatting";
 import { useRouter } from "next/navigation";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { formatEther } from "viem";
+import debounce from "debounce";
+import { Badge } from "@/components/ui/badge";
 
 export default function Container({
   pageId,
   usesReservedName,
   owner,
+  contractOwner,
   contractData,
   network,
   destroyPage,
+  shortNameThreshold,
 }: {
   pageId: string;
   usesReservedName: boolean;
   owner: string;
+  contractOwner: string;
   contractData: ContractPage;
   network: Network;
   destroyPage: (page: ContractPage) => Promise<void>;
+  shortNameThreshold: number;
 }) {
   const { address } = useAccount();
   const isOwner = address === owner;
+  const isContractOwner = address === contractOwner;
 
   const [isCopied, setIsCopied] = useState(false);
   const [isSheetOpen, setIsSheetOpen] = useState<{ [key: string]: boolean }>(
@@ -94,7 +112,13 @@ export default function Container({
   };
 
   const [txStatus, setTxStatus] = useState<
-    "idle" | "approval" | "requesting" | "creating" | "success" | "error"
+    | "idle"
+    | "approval"
+    | "requesting"
+    | "creating"
+    | "success"
+    | "error"
+    | "insufficient funds"
   >("idle");
 
   const [donateValue, setDonateValue] = useState<string>("0");
@@ -275,6 +299,127 @@ export default function Container({
     }
   };
 
+  const [isReserveNameSheetOpen, setIsReserveNameSheetOpen] = useState(false);
+  const [reserveName, setReserveName] = useState("");
+  const [reserveDuration, setReserveDuration] = useState("1");
+  const [isNameAvailable, setIsNameAvailable] = useState<boolean | null>(null);
+  const [isCheckingName, setIsCheckingName] = useState(false);
+  const [nameCost, setNameCost] = useState<string | null>(null);
+
+  const calculateCost = async (
+    name: string,
+    duration: string,
+    available: boolean
+  ) => {
+    console.log("calculateCost", name, duration, available);
+    if (name && !isCheckingName && available) {
+      try {
+        const cost = await ContractPagesCalculateReservationCost(
+          parseInt(duration),
+          name
+        );
+        console.log("cost", cost);
+        setNameCost(formatEther(cost));
+      } catch (error) {
+        console.error("Error calculating reservation cost:", error);
+        setNameCost(null);
+      }
+    } else {
+      setNameCost(null);
+    }
+  };
+
+  const checkNameAvailability = async (name: string, duration: string) => {
+    console.log("checkNameAvailability", name, duration);
+    if (name) {
+      try {
+        const isReserved = await ContractPagesGetReservedName(name);
+        console.log("isReserved", isReserved);
+        setIsNameAvailable(!isReserved);
+
+        if (!isReserved) {
+          await calculateCost(name, duration, !isReserved);
+        } else {
+          setNameCost(null);
+        }
+      } catch (error) {
+        console.error("Error checking name availability:", error);
+        setIsNameAvailable(null);
+        setNameCost(null);
+      } finally {
+        setIsCheckingName(false);
+      }
+    } else {
+      setIsNameAvailable(null);
+      setNameCost(null);
+      setIsCheckingName(false);
+    }
+  };
+
+  const debouncedCheckNameAvailability = useRef(
+    debounce(checkNameAvailability, 500)
+  ).current;
+
+  const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    console.log("handleNameChange", e.target.value);
+    if (!isCheckingName) {
+      setIsCheckingName(true);
+    }
+    const name = e.target.value;
+    setReserveName(name);
+    debouncedCheckNameAvailability(name, reserveDuration);
+  };
+
+  const handleDurationChange = (value: string) => {
+    setReserveDuration(value);
+    calculateCost(reserveName, value, !!isNameAvailable);
+  };
+
+  const handleReserveName = async () => {
+    try {
+      setTxStatus("approval");
+      const durationInMonths = parseInt(reserveDuration);
+      const cost = await ContractPagesCalculateReservationCost(
+        durationInMonths,
+        reserveName
+      );
+      const ethAmount = formatEther(cost);
+
+      await ContractPagesReserveName(
+        pageId,
+        reserveName,
+        durationInMonths,
+        () => {
+          setTxStatus("creating");
+        },
+        isContractOwner ? undefined : ethAmount
+      );
+
+      setTxStatus("success");
+      setIsReserveNameSheetOpen(false);
+
+      router.push(`/${reserveName}`);
+    } catch (error) {
+      console.error("Error reserving name:", error);
+      if (
+        error instanceof Error &&
+        error.message.includes("insufficient funds for transfer")
+      ) {
+        setTxStatus("insufficient funds");
+      } else {
+        setTxStatus("error");
+      }
+      setTimeout(() => {
+        setTxStatus("idle");
+      }, 2000);
+    }
+  };
+
+  const isPremium =
+    reserveName.length > 0 &&
+    shortNameThreshold !== null &&
+    reserveName.length <= shortNameThreshold;
+
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
       {contractData.backgroundImage && (
@@ -289,15 +434,107 @@ export default function Container({
       )}
       {isOwner && (
         <div className="fixed top-0 left-0 w-full flex justify-between items-center space-x-2 px-6 py-2 z-50">
-          {!usesReservedName ? (
-            <Button className="bg-white text-black">
-              Set page name <StarFilledIcon className="h-4 w-4 ml-2" />
-            </Button>
-          ) : (
-            <Button className="bg-white text-black">
-              Release page name <StarIcon className="h-4 w-4 ml-2" />
-            </Button>
-          )}
+          <Sheet
+            open={isReserveNameSheetOpen}
+            onOpenChange={setIsReserveNameSheetOpen}
+          >
+            <SheetTrigger asChild>
+              <Button className="bg-white text-black">
+                {!usesReservedName ? (
+                  <>
+                    Reserve page name (ex: /usdc, /eth){" "}
+                    <StarIcon className="h-4 w-4 ml-2" />
+                  </>
+                ) : (
+                  <>
+                    Release page name{" "}
+                    <StarFilledIcon className="h-4 w-4 ml-2" />
+                  </>
+                )}
+              </Button>
+            </SheetTrigger>
+            <SheetContent
+              side={isPortrait ? "top" : "bottom"}
+              className="flex flex-col items-center text-white"
+            >
+              <SheetHeader>
+                <SheetTitle>Reserve Page Name</SheetTitle>
+                <SheetDescription>
+                  Enter a name and select duration to reserve
+                </SheetDescription>
+              </SheetHeader>
+              <div className="space-y-4 w-full max-w-xs">
+                <div>
+                  <Label htmlFor="reserve-name">Name</Label>
+                  <div className="relative">
+                    <Input
+                      id="reserve-name"
+                      value={reserveName}
+                      onChange={handleNameChange}
+                      placeholder="Enter name"
+                    />
+                    {isCheckingName && (
+                      <Loader2 className="absolute right-2 top-3 h-4 w-4 animate-spin" />
+                    )}
+                    {!isCheckingName && isPremium && (
+                      <Badge
+                        className="absolute right-2 top-2"
+                        variant="secondary"
+                      >
+                        premium
+                      </Badge>
+                    )}
+                  </div>
+
+                  {isNameAvailable === false && !isCheckingName && (
+                    <p className="text-red-500">Name is already taken</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="reserve-duration">Duration</Label>
+                  <Select
+                    value={reserveDuration}
+                    onValueChange={handleDurationChange}
+                  >
+                    <SelectTrigger id="reserve-duration">
+                      <SelectValue placeholder="Select duration" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1 month</SelectItem>
+                      <SelectItem value="12">12 months</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button
+                  onClick={handleReserveName}
+                  disabled={
+                    txStatus !== "idle" || !isNameAvailable || isCheckingName
+                  }
+                >
+                  {txStatus === "idle" ? (
+                    !!nameCost && !isContractOwner ? (
+                      `Reserve Name (${nameCost} ${network.symbol})`
+                    ) : (
+                      "Reserve Name"
+                    )
+                  ) : (
+                    <>
+                      {txStatus === "approval"
+                        ? "Approve in wallet"
+                        : txStatus === "creating"
+                        ? "Reserving..."
+                        : txStatus === "success"
+                        ? "Reserved!"
+                        : txStatus === "insufficient funds"
+                        ? "Insufficient funds"
+                        : "Error"}
+                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                    </>
+                  )}
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
           <div className="flex items-center space-x-2">
             <Button
               variant="destructive"

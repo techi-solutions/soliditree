@@ -79,6 +79,16 @@ export class ContractPagesService {
     return result as string;
   }
 
+  async getShortNameThreshold() {
+    const result = await this.contract().read.shortNameThreshold();
+    return result as number;
+  }
+
+  async getContractOwner() {
+    const result = await this.contract().read.owner();
+    return result as string;
+  }
+
   async getAbiFromAddress(address: string) {
     console.log(address);
     const result = this.contract().abi;

@@ -108,6 +108,11 @@ export default async function Page({ params }: Props) {
   const owner = await contractPages.getPageOwner(resolvedPageId);
   const usesReservedName = !pageId.startsWith("0x");
 
+  // Fetch shortNameThreshold here
+  const shortNameThreshold = await contractPages.getShortNameThreshold();
+
+  const contractOwner = await contractPages.getContractOwner();
+
   const destroyPage = async (page: ContractPage) => {
     "use server";
 
@@ -137,9 +142,11 @@ export default async function Page({ params }: Props) {
         pageId={pageId}
         usesReservedName={usesReservedName}
         owner={owner}
+        contractOwner={contractOwner}
         contractData={page}
         network={contractNetwork}
         destroyPage={destroyPage}
+        shortNameThreshold={shortNameThreshold} // Pass shortNameThreshold here
       />
     </Suspense>
   );

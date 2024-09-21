@@ -6,6 +6,7 @@ import {
   simulateContract,
   waitForTransactionReceipt,
   writeContract,
+  readContract,
 } from "@wagmi/core";
 import { networks, wagmiAdapter } from "../walletConnect/config";
 import { extractEventData } from "@/utils/events";
@@ -180,4 +181,113 @@ export const ContractPagesDonate = async (
   }
 
   return receipt;
+};
+
+export const ContractPagesReserveName = async (
+  pageId: string,
+  name: string,
+  durationInMonths: number,
+  onReserving: () => void,
+  ethAmount?: string
+) => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    return;
+  }
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const ethersAmount = ethAmount ? parseEther(ethAmount) : undefined;
+
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "reserveName",
+    args: [pageId, name, durationInMonths],
+    value: ethersAmount,
+  });
+
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
+
+  onReserving();
+
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
+    hash: result,
+  });
+  if (receipt.status !== "success") {
+    throw new Error("Transaction failed");
+  }
+
+  return receipt;
+};
+
+export const ContractPagesGetReservedName = async (
+  name: string
+): Promise<boolean> => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    throw new Error("Network not found");
+  }
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const result = (await readContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "getReservedName",
+    args: [name],
+  })) as string;
+
+  // Check if result is truthy and not the empty address (0x0)
+  const isReserved =
+    !!result &&
+    result !==
+      "0x0000000000000000000000000000000000000000000000000000000000000000" &&
+    result != "0x";
+
+  return isReserved;
+};
+
+export const ContractPagesCalculateReservationCost = async (
+  months: number,
+  name: string
+): Promise<bigint> => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    throw new Error("Network not found");
+  }
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const result = (await readContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "calculateReservationCost",
+    args: [BigInt(months), name],
+  })) as bigint;
+
+  return result;
+};
+
+export const ContractPagesShortNameThreshold = async (): Promise<number> => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    throw new Error("Network not found");
+  }
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const result = (await readContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "shortNameThreshold",
+  })) as bigint;
+
+  return Number(result);
 };

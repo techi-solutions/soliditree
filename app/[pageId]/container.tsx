@@ -49,13 +49,16 @@ import { useIsPortrait } from "@/hooks/screen";
 import { HeartFilledIcon, StarFilledIcon } from "@radix-ui/react-icons";
 import { ContractPagesDonate } from "@/services/contractPages/client";
 import { formatArg } from "@/utils/formatting";
+import { useRouter } from "next/navigation";
 
 export default function Container({
+  pageId,
   usesReservedName,
   owner,
   contractData,
   network,
 }: {
+  pageId: string;
   usesReservedName: boolean;
   owner: string;
   contractData: ContractPage;
@@ -167,13 +170,9 @@ export default function Container({
     try {
       setTxStatus("approval");
 
-      const receipt = await ContractPagesDonate(
-        contractData.contractAddress,
-        donateValue,
-        () => {
-          setTxStatus("creating");
-        }
-      );
+      const receipt = await ContractPagesDonate(donateValue, () => {
+        setTxStatus("creating");
+      });
       if (!receipt) {
         throw new Error("Transaction failed");
       }
@@ -242,6 +241,12 @@ export default function Container({
     setTimeout(() => setIsCopied(false), 1000);
   };
 
+  const router = useRouter();
+
+  const handleEditPage = () => {
+    router.push(`/edit/${pageId}`);
+  };
+
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
       {contractData.backgroundImage && (
@@ -269,7 +274,7 @@ export default function Container({
             <Button variant="destructive">
               Delete <TrashIcon className="h-4 w-4 ml-2" />
             </Button>
-            <Button>
+            <Button onClick={handleEditPage}>
               Edit <PencilIcon className="h-4 w-4 ml-2" />
             </Button>
           </div>

@@ -2,12 +2,7 @@
 
 import { useState, useRef, useEffect } from "react";
 import { z } from "zod";
-import {
-  FieldErrors,
-  useForm,
-  UseFormRegister,
-  UseFormSetValue,
-} from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import {
   DragDropContext,
@@ -60,8 +55,8 @@ import {
 } from "@/components/ui/drawer";
 import { generateRandomString } from "@/utils/random";
 import { keccak256, stringToBytes } from "viem";
-import { HexColorPicker } from "react-colorful";
 import { ContractPageColors } from "@/services/contractPages";
+import ColorPickerInput from "@/components/ColorPickerInput";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -87,66 +82,6 @@ const formSchema = z.object({
 });
 
 export type CreatePageFormData = z.infer<typeof formSchema>;
-
-const ColorPickerInput = ({
-  name,
-  label,
-  register,
-  colors,
-  setColors,
-  setValue,
-  errors,
-}: {
-  name: keyof CreatePageFormData["colors"];
-  label: string;
-  register: UseFormRegister<CreatePageFormData>;
-  colors: CreatePageFormData["colors"];
-  setColors: (colors: CreatePageFormData["colors"]) => void;
-  setValue: UseFormSetValue<CreatePageFormData>;
-  errors: FieldErrors<CreatePageFormData>;
-}) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor={name}>{label}</Label>
-      <div className="flex items-center space-x-2">
-        <Input
-          id={name}
-          {...register(`colors.${name}`)}
-          value={colors[name]}
-          onChange={(e) => {
-            const newColor = e.target.value;
-            setColors({ ...colors, [name]: newColor });
-            setValue(`colors.${name}`, newColor);
-          }}
-          className="text-input w-28"
-        />
-        <Popover open={isOpen} onOpenChange={setIsOpen}>
-          <PopoverTrigger asChild>
-            <Button
-              variant="outline"
-              className="w-10 h-10 p-0"
-              style={{ backgroundColor: colors[name] }}
-            />
-          </PopoverTrigger>
-          <PopoverContent className="w-auto p-3">
-            <HexColorPicker
-              color={colors[name]}
-              onChange={(newColor) => {
-                setColors({ ...colors, [name]: newColor });
-                setValue(`colors.${name}`, newColor);
-              }}
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
-      {errors.colors?.[name] && (
-        <p className="text-red-500">{errors.colors[name]?.message}</p>
-      )}
-    </div>
-  );
-};
 
 export default function Container({
   chainId,
@@ -487,7 +422,7 @@ export default function Container({
                 accept=".svg"
                 ref={fileInputRef}
                 onChange={handleFileChange}
-                className="pl-8 text-input"
+                className="pl-8 text-input file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
                 style={{ paddingTop: 5 }}
               />
               <div className="absolute" style={{ top: 2, left: 2 }}>
@@ -530,7 +465,7 @@ export default function Container({
                 accept=".png,.jpg,.jpeg"
                 ref={backgroundImageRef}
                 onChange={handleBackgroundImageChange}
-                className="pl-8 text-input"
+                className="pl-8 text-input file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
                 style={{ paddingTop: 5 }}
               />
               <div

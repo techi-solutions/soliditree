@@ -10,6 +10,7 @@ import {
 import { networks, wagmiAdapter } from "../walletConnect/config";
 import { extractEventData } from "@/utils/events";
 import { AbiItem, parseEther, stringToHex } from "viem";
+import { NETWORKS } from "@/constants/networks";
 
 export const ContractPagesCreatePage = async (
   contractAddress: string,
@@ -25,8 +26,11 @@ export const ContractPagesCreatePage = async (
 
   const contentHashBytes = stringToHex(contentHash);
 
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
   const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
-    address: contractAddress as `0x${string}`,
+    address: contractPagesAddress as `0x${string}`,
     abi: ContractPagesABI.abi,
     functionName: "createPage",
     args: [contractAddress, contentHashBytes],
@@ -64,8 +68,49 @@ export const ContractPagesCreatePage = async (
   return pageId;
 };
 
+export const ContractPagesUpdatePageContentHash = async (
+  pageId: string,
+  contentHash: string,
+  onUpdating: () => void
+) => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    return;
+  }
+
+  console.log("caipNetwork", caipNetwork);
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
+
+  const contentHashBytes = stringToHex(contentHash);
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  console.log("contractPagesAddress", contractPagesAddress);
+
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "updatePageContentHash",
+    args: [pageId, contentHashBytes],
+  });
+
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
+
+  onUpdating();
+
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
+    hash: result,
+  });
+  if (receipt.status !== "success") {
+    throw new Error("Transaction failed");
+  }
+
+  return receipt;
+};
+
 export const ContractPagesDonate = async (
-  contractAddress: string,
   amount: string,
   onCreating: () => void
 ) => {
@@ -76,10 +121,13 @@ export const ContractPagesDonate = async (
 
   await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
 
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
   const ethersAmount = parseEther(amount);
 
   const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
-    address: contractAddress as `0x${string}`,
+    address: contractPagesAddress as `0x${string}`,
     abi: ContractPagesABI.abi,
     functionName: "donate",
     value: ethersAmount,

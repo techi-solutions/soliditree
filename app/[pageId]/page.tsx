@@ -112,6 +112,7 @@ export default async function Page({ params }: Props) {
     <Suspense fallback={<div>Loading...</div>}>
       <meta name="theme-color" content={page.colors?.background ?? "#0f766e"} />
       <Container
+        pageId={pageId}
         usesReservedName={usesReservedName}
         owner={owner}
         contractData={page}

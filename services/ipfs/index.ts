@@ -35,6 +35,16 @@ class IPFSService {
     return upload.IpfsHash;
   }
 
+  async unpinFile(hash: string): Promise<boolean> {
+    try {
+      await this.pinata.unpin([hash]);
+      return true;
+    } catch (error) {
+      console.error(`Failed to unpin file with hash ${hash}:`, error);
+      return false;
+    }
+  }
+
   async getJSON(hash: string): Promise<ContractPage | null> {
     try {
       const response = await fetch(

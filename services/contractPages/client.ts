@@ -110,6 +110,41 @@ export const ContractPagesUpdatePageContentHash = async (
   return receipt;
 };
 
+export const ContractPagesDestroyPage = async (
+  pageId: string,
+  onDestroying: () => void
+) => {
+  const caipNetwork = networks.find((n) => n.chainId === 100);
+  if (!caipNetwork) {
+    return;
+  }
+
+  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "destroyPage",
+    args: [pageId],
+  });
+
+  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
+
+  onDestroying();
+
+  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
+    hash: result,
+  });
+  if (receipt.status !== "success") {
+    throw new Error("Transaction failed");
+  }
+
+  return receipt;
+};
+
 export const ContractPagesDonate = async (
   amount: string,
   onCreating: () => void

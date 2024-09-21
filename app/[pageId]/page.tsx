@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import { NETWORKS } from "@/constants/networks";
-import { ContractPagesService } from "@/services/contractPages";
+import { ContractPage, ContractPagesService } from "@/services/contractPages";
 import IPFSService from "@/services/ipfs";
 import { Suspense } from "react";
 import Container from "./container";
@@ -83,15 +83,15 @@ export default async function Page({ params }: Props) {
     network.adminContractAddress
   );
 
-  const ipfsService = new IPFSService(
-    process.env.IPFS_URL as string,
-    process.env.IPFS_API_KEY as string
-  );
-
   let resolvedPageId = pageId;
   if (!pageId.startsWith("0x")) {
     resolvedPageId = await contractPages.getPageIdByReservedName(pageId);
   }
+
+  const ipfsService = new IPFSService(
+    process.env.IPFS_URL as string,
+    process.env.IPFS_API_KEY as string
+  );
 
   const hash = await contractPages.getPageContentHash(resolvedPageId);
   const page = await ipfsService.getJSON(hash);
@@ -108,6 +108,28 @@ export default async function Page({ params }: Props) {
   const owner = await contractPages.getPageOwner(resolvedPageId);
   const usesReservedName = !pageId.startsWith("0x");
 
+  const destroyPage = async (page: ContractPage) => {
+    "use server";
+
+    const ipfsService = new IPFSService(
+      process.env.IPFS_URL as string,
+      process.env.IPFS_API_KEY as string
+    );
+
+    // Unpin the JSON content
+    await ipfsService.unpinFile(hash);
+
+    // Unpin the icon if it exists
+    if (page.icon && page.icon.startsWith("ipfs://")) {
+      await ipfsService.unpinFile(page.icon.replace("ipfs://", ""));
+    }
+
+    // Unpin the background image if it exists
+    if (page.backgroundImage && page.backgroundImage?.startsWith("ipfs://")) {
+      await ipfsService.unpinFile(page.backgroundImage?.replace("ipfs://", ""));
+    }
+  };
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <meta name="theme-color" content={page.colors?.background ?? "#0f766e"} />
@@ -117,6 +139,7 @@ export default async function Page({ params }: Props) {
         owner={owner}
         contractData={page}
         network={contractNetwork}
+        destroyPage={destroyPage}
       />
     </Suspense>
   );

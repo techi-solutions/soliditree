@@ -47,7 +47,10 @@ import { hexToRgb } from "@/utils/colors";
 import { cn } from "@/lib/utils";
 import { useIsPortrait } from "@/hooks/screen";
 import { HeartFilledIcon, StarFilledIcon } from "@radix-ui/react-icons";
-import { ContractPagesDonate } from "@/services/contractPages/client";
+import {
+  ContractPagesDonate,
+  ContractPagesDestroyPage,
+} from "@/services/contractPages/client";
 import { formatArg } from "@/utils/formatting";
 import { useRouter } from "next/navigation";
 
@@ -57,12 +60,14 @@ export default function Container({
   owner,
   contractData,
   network,
+  destroyPage,
 }: {
   pageId: string;
   usesReservedName: boolean;
   owner: string;
   contractData: ContractPage;
   network: Network;
+  destroyPage: (page: ContractPage) => Promise<void>;
 }) {
   const { address } = useAccount();
   const isOwner = address === owner;
@@ -247,6 +252,29 @@ export default function Container({
     router.push(`/edit/${pageId}`);
   };
 
+  const [destroyStatus, setDestroyStatus] = useState<
+    "idle" | "approval" | "destroying" | "success" | "error"
+  >("idle");
+
+  const handleDestroyPage = async () => {
+    try {
+      setDestroyStatus("approval");
+      await ContractPagesDestroyPage(pageId, () => {
+        setDestroyStatus("destroying");
+      });
+      await destroyPage(contractData);
+      setDestroyStatus("success");
+      router.push("/"); // Redirect to home page after successful deletion
+    } catch (error) {
+      console.error("Error destroying page:", error);
+      setDestroyStatus("error");
+
+      setTimeout(() => {
+        setDestroyStatus("idle");
+      }, 1000);
+    }
+  };
+
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
       {contractData.backgroundImage && (
@@ -271,8 +299,27 @@ export default function Container({
             </Button>
           )}
           <div className="flex items-center space-x-2">
-            <Button variant="destructive">
-              Delete <TrashIcon className="h-4 w-4 ml-2" />
+            <Button
+              variant="destructive"
+              onClick={handleDestroyPage}
+              disabled={destroyStatus !== "idle"}
+            >
+              {destroyStatus === "idle" ? (
+                <>
+                  Delete <TrashIcon className="h-4 w-4 ml-2" />
+                </>
+              ) : (
+                <>
+                  {destroyStatus === "approval"
+                    ? "Approve in wallet"
+                    : destroyStatus === "destroying"
+                    ? "Destroying..."
+                    : destroyStatus === "success"
+                    ? "Destroyed!"
+                    : "Error"}
+                  <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                </>
+              )}
             </Button>
             <Button onClick={handleEditPage}>
               Edit <PencilIcon className="h-4 w-4 ml-2" />

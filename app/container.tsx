@@ -3,14 +3,16 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAccount, useDisconnect } from "wagmi";
-import { LogOutIcon } from "lucide-react";
+import { ArrowRightIcon, LogOutIcon } from "lucide-react";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 
 export default function LandingPageContainer() {
+  const router = useRouter();
   const { address, chainId } = useAccount();
   const { disconnect } = useDisconnect();
 
@@ -23,6 +25,10 @@ export default function LandingPageContainer() {
   ) => {
     setContractAddress(e.target.value);
     setIsValidContract(true); // You might want to add actual validation here
+  };
+
+  const handleCreatePage = () => {
+    router.push(`/new/${contractAddress}?chainId=${chainId}`);
   };
 
   return (
@@ -68,17 +74,28 @@ export default function LandingPageContainer() {
           <>
             <Separator className="my-8 animate-fade-in-slow bg-white" />
             <div className="mt-8 animate-fade-in-slow">
-              <h3 className="text-2xl font-bold mb-4">Create a new page</h3>
+              <h3 className="text-2xl font-bold mb-4">
+                Create a new contract page
+              </h3>
               <Input
                 type="text"
                 placeholder="Enter contract address"
                 className="w-full text-lg"
                 onChange={handleContractAddressChange}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreatePage();
+                  }
+                }}
                 value={contractAddress}
               />
               {debouncedValidContract && (
                 <Link href={`/new/${contractAddress}?chainId=${chainId}`}>
-                  <Button className="mt-4 animate-fade-in">Create Page</Button>
+                  <Button className="mt-4 animate-fade-in">
+                    Start creating page{" "}
+                    <ArrowRightIcon className="h-4 w-4 ml-2" />
+                  </Button>
                 </Link>
               )}
             </div>

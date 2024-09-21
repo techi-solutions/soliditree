@@ -202,6 +202,9 @@ export default function Container({
       const pageAddress = `${process.env.NEXT_PUBLIC_PAGE_URL}/${pageId}`;
       console.log("pageAddress", pageAddress);
 
+      // Wait for 1 second before navigating
+      await new Promise((resolve) => setTimeout(resolve, 1000));
+
       router.push(pageAddress);
       return;
     } catch (error) {

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, MouseEvent } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -35,7 +35,7 @@ import {
   QuestionMarkCircledIcon,
 } from "@radix-ui/react-icons";
 import { cn } from "@/lib/utils";
-import { ExtendedAbi, ExtendedAbiItem } from "@/services/scan";
+import { AbiTextStyle, ExtendedAbi, ExtendedAbiItem } from "@/services/scan";
 import Image from "next/image";
 import { ContractPagesCreatePage } from "@/services/contractPages/client";
 import { Progress } from "@/components/ui/progress";
@@ -57,6 +57,15 @@ import { generateRandomString } from "@/utils/random";
 import { keccak256, stringToBytes } from "viem";
 import { ContractPageColors } from "@/services/contractPages";
 import ColorPickerInput from "@/components/ColorPickerInput";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { abiTextStyleClasses } from "@/services/scan";
 
 const chains = [
   { id: 137, name: "Polygon", icon: "/assets/chains/polygon.png" },
@@ -319,8 +328,88 @@ export default function Container({
     setFunctions([link, ...functions]);
   };
 
+  const handleAddText = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const group: ExtendedAbiItem = {
+      id: `text(${generateRandomString(4)})`,
+      signature: keccak256(stringToBytes(`text(${generateRandomString(4)})`)),
+      name: "Text",
+      text: {
+        style: "h1",
+        text: "New Text",
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([group, ...functions]);
+  };
+
+  const handleAddSeparator = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const separator: ExtendedAbiItem = {
+      id: `separator(${generateRandomString(4)})`,
+      signature: keccak256(
+        stringToBytes(`separator(${generateRandomString(4)})`)
+      ),
+      name: "Separator",
+      separator: {
+        style: "solid",
+        color: "#000000",
+        width: 1,
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([separator, ...functions]);
+  };
+
   const handleDeleteFunction = (id: string) => {
     setFunctions(functions.filter((func) => func.id !== id));
+  };
+
+  const handleEditText = (id: string, newText: string, newStyle: string) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id
+          ? {
+              ...func,
+              text: {
+                ...func.text,
+                text: newText,
+                style: newStyle as AbiTextStyle,
+              },
+            }
+          : func
+      )
+    );
+  };
+
+  const handleEditSeparator = (
+    id: string,
+    newStyle: string,
+    newColor: string,
+    newWidth: number
+  ) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id
+          ? {
+              ...func,
+              separator: {
+                style: newStyle as "solid" | "dashed" | "dotted",
+                color: newColor,
+                width: newWidth,
+              },
+            }
+          : func
+      )
+    );
   };
 
   const supportedChain = chains.some((chain) => chain.id === selectedChainId);
@@ -656,6 +745,12 @@ export default function Container({
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold mb-2">Functions</h2>
             <div className="flex space-x-2">
+              <Button onClick={handleAddText}>
+                Add Text <PlusIcon className="h-4 w-4 ml-2" />
+              </Button>
+              <Button onClick={handleAddSeparator}>
+                Add Separator <PlusIcon className="h-4 w-4 ml-2" />
+              </Button>
               <Drawer>
                 <DrawerTrigger asChild>
                   <Button>
@@ -738,7 +833,27 @@ export default function Container({
                             </div>
                             <div className="flex flex-col">
                               <span className="flex items-center">
-                                {func.name}
+                                {func.text && (
+                                  <div
+                                    className={cn(
+                                      "text-black",
+                                      abiTextStyleClasses[
+                                        func.text.style || "h1"
+                                      ]
+                                    )}
+                                  >
+                                    {func.text.text}
+                                  </div>
+                                )}
+                                {func.separator && (
+                                  <div
+                                    className="w-full"
+                                    style={{
+                                      borderTop: `${func.separator.width}px ${func.separator.style} ${func.separator.color}`,
+                                    }}
+                                  />
+                                )}
+                                {!func.text && !func.separator && func.name}
                                 <Popover
                                   open={openPopoverId === func.id}
                                   onOpenChange={(open) =>
@@ -750,28 +865,160 @@ export default function Container({
                                   </PopoverTrigger>
                                   <PopoverContent className="w-80">
                                     <div className="space-y-2">
-                                      <h4 className="font-medium">
-                                        Edit Function Name
-                                      </h4>
-                                      <Input
-                                        defaultValue={func.name}
-                                        className="text-input"
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            handleEditFunctionName(
-                                              func.id,
-                                              e.currentTarget.value
-                                            );
-                                          }
-                                        }}
-                                        onChange={(e) => {
-                                          handleEditFunctionName(
-                                            func.id,
-                                            e.currentTarget.value,
-                                            false
-                                          );
-                                        }}
-                                      />
+                                      {func.text && (
+                                        <>
+                                          <h4 className="font-medium">
+                                            Edit Text
+                                          </h4>
+                                          <Input
+                                            defaultValue={func.text.text}
+                                            className="text-input"
+                                            onChange={(e) => {
+                                              handleEditText(
+                                                func.id,
+                                                e.currentTarget.value,
+                                                func.text?.style || "h1"
+                                              );
+                                            }}
+                                          />
+                                          <Select
+                                            defaultValue={
+                                              func.text.style || "h1"
+                                            }
+                                            onValueChange={(value) => {
+                                              handleEditText(
+                                                func.id,
+                                                func.text?.text || "",
+                                                value
+                                              );
+                                            }}
+                                          >
+                                            <SelectTrigger className="w-full">
+                                              <SelectValue placeholder="Select style" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="h1">
+                                                Heading 1
+                                              </SelectItem>
+                                              <SelectItem value="h2">
+                                                Heading 2
+                                              </SelectItem>
+                                              <SelectItem value="h3">
+                                                Heading 3
+                                              </SelectItem>
+                                              <SelectItem value="h4">
+                                                Heading 4
+                                              </SelectItem>
+                                              <SelectItem value="h5">
+                                                Heading 5
+                                              </SelectItem>
+                                              <SelectItem value="h6">
+                                                Heading 6
+                                              </SelectItem>
+                                              <SelectItem value="normal">
+                                                Normal
+                                              </SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                        </>
+                                      )}
+                                      {func.separator && (
+                                        <>
+                                          <h4 className="font-medium">
+                                            Edit Separator
+                                          </h4>
+                                          <Select
+                                            defaultValue={
+                                              func.separator.style || "solid"
+                                            }
+                                            onValueChange={(value) => {
+                                              handleEditSeparator(
+                                                func.id,
+                                                value,
+                                                func.separator?.color ||
+                                                  "#000000",
+                                                func.separator?.width || 1
+                                              );
+                                            }}
+                                          >
+                                            <SelectTrigger className="w-full">
+                                              <SelectValue placeholder="Select style" />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                              <SelectItem value="solid">
+                                                Solid
+                                              </SelectItem>
+                                              <SelectItem value="dashed">
+                                                Dashed
+                                              </SelectItem>
+                                              <SelectItem value="dotted">
+                                                Dotted
+                                              </SelectItem>
+                                            </SelectContent>
+                                          </Select>
+                                          <Input
+                                            type="color"
+                                            defaultValue={
+                                              func.separator.color || "#000000"
+                                            }
+                                            onChange={(e) => {
+                                              handleEditSeparator(
+                                                func.id,
+                                                func.separator?.style ||
+                                                  "solid",
+                                                e.target.value,
+                                                func.separator?.width || 1
+                                              );
+                                            }}
+                                          />
+                                          <div className="space-y-2">
+                                            <Label>Width</Label>
+                                            <Slider
+                                              defaultValue={[
+                                                func.separator.width || 1,
+                                              ]}
+                                              max={10}
+                                              step={1}
+                                              onValueChange={(value) => {
+                                                handleEditSeparator(
+                                                  func.id,
+                                                  func.separator?.style ||
+                                                    "solid",
+                                                  func.separator?.color ||
+                                                    "#000000",
+                                                  value[0]
+                                                );
+                                              }}
+                                            />
+                                          </div>
+                                        </>
+                                      )}
+                                      {!func.text && !func.separator && (
+                                        <>
+                                          <h4 className="font-medium">
+                                            Edit Function Name
+                                          </h4>
+                                          <Input
+                                            defaultValue={func.name}
+                                            className="text-input"
+                                            onKeyDown={(e) => {
+                                              if (e.key === "Enter") {
+                                                handleEditFunctionName(
+                                                  func.id,
+                                                  e.currentTarget.value
+                                                );
+                                              }
+                                            }}
+                                            onChange={(e) => {
+                                              handleEditFunctionName(
+                                                func.id,
+                                                e.currentTarget.value,
+                                                false
+                                              );
+                                            }}
+                                          />
+                                        </>
+                                      )}
                                       <div className="flex justify-end">
                                         <Button
                                           size="sm"
@@ -792,7 +1039,7 @@ export default function Container({
                             </div>
                           </div>
                           <div className="flex items-center space-x-2">
-                            {func.link && (
+                            {(func.link || func.text || func.separator) && (
                               <Button
                                 variant="ghost"
                                 size="icon"

@@ -1,6 +1,23 @@
 import { Abi, AbiFunction, keccak256, toBytes } from "viem";
 import { ProxyContractService } from "../proxyContract";
 
+export type AbiTextStyle = "h1" | "h2" | "h3" | "h4" | "h5" | "h6" | "normal";
+
+export const abiTextStyleClasses: Record<AbiTextStyle, string> = {
+  h1: "text-5xl font-bold",
+  h2: "text-4xl font-semibold",
+  h3: "text-3xl font-semibold",
+  h4: "text-2xl font-semibold",
+  h5: "text-xl font-medium",
+  h6: "text-lg font-medium",
+  normal: "text-base",
+};
+
+export type AbiText = {
+  style: AbiTextStyle;
+  text: string;
+};
+
 // Define a new type that extends Abi with an 'id' property
 // export type ExtendedAbiFunction = Abi & {Abi id: string }[];
 export type ExtendedAbiItem = AbiFunction & {
@@ -9,6 +26,12 @@ export type ExtendedAbiItem = AbiFunction & {
   selected: boolean;
   link?: {
     url: string;
+  };
+  text?: AbiText;
+  separator?: {
+    style: "solid" | "dashed" | "dotted";
+    color: string;
+    width: number;
   };
 };
 

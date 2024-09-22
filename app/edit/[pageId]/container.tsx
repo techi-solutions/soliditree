@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, MouseEvent } from "react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -14,7 +14,12 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import ColorPickerInput from "@/components/ColorPickerInput";
-import { ExtendedAbi, ExtendedAbiItem } from "@/services/scan";
+import {
+  AbiTextStyle,
+  abiTextStyleClasses,
+  ExtendedAbi,
+  ExtendedAbiItem,
+} from "@/services/scan";
 import { ContractPagesUpdatePageContentHash } from "@/services/contractPages/client";
 import {
   DragDropContext,
@@ -49,6 +54,14 @@ import {
 import { generateRandomString } from "@/utils/random";
 import { keccak256, stringToBytes } from "viem";
 import { cn } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
 
 const formSchema = z.object({
   title: z.string().min(1, "Your page needs a title"),
@@ -299,8 +312,88 @@ export default function Container({
     setFunctions([link, ...functions]);
   };
 
+  const handleAddText = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const group: ExtendedAbiItem = {
+      id: `text(${generateRandomString(4)})`,
+      signature: keccak256(stringToBytes(`text(${generateRandomString(4)})`)),
+      name: "Text",
+      text: {
+        style: "h1",
+        text: "New Text",
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([group, ...functions]);
+  };
+
+  const handleAddSeparator = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    const separator: ExtendedAbiItem = {
+      id: `separator(${generateRandomString(4)})`,
+      signature: keccak256(
+        stringToBytes(`separator(${generateRandomString(4)})`)
+      ),
+      name: "Separator",
+      separator: {
+        style: "solid",
+        color: "#000000",
+        width: 1,
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([separator, ...functions]);
+  };
+
   const handleDeleteFunction = (id: string) => {
     setFunctions(functions.filter((func) => func.id !== id));
+  };
+
+  const handleEditText = (id: string, newText: string, newStyle: string) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id
+          ? {
+              ...func,
+              text: {
+                ...func.text,
+                text: newText,
+                style: newStyle as AbiTextStyle,
+              },
+            }
+          : func
+      )
+    );
+  };
+
+  const handleEditSeparator = (
+    id: string,
+    newStyle: string,
+    newColor: string,
+    newWidth: number
+  ) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id
+          ? {
+              ...func,
+              separator: {
+                style: newStyle as "solid" | "dashed" | "dotted",
+                color: newColor,
+                width: newWidth,
+              },
+            }
+          : func
+      )
+    );
   };
 
   return (
@@ -310,7 +403,7 @@ export default function Container({
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <div>
           <Label htmlFor="title">Title</Label>
-          <Input id="title" {...register("title")} className="text-input" />
+          <Input id="title" {...register("title")} />
           {errors.title && (
             <p className="text-red-500">{errors.title.message}</p>
           )}
@@ -333,7 +426,7 @@ export default function Container({
               accept=".svg"
               ref={fileInputRef}
               onChange={handleFileChange}
-              className="pl-8 text-input file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
+              className="pl-8 text-white file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
               style={{ paddingTop: 5 }}
             />
             <div className="absolute" style={{ top: 2, left: 2 }}>
@@ -355,7 +448,7 @@ export default function Container({
 
         <div>
           <Label htmlFor="website">Website Link (optional)</Label>
-          <Input id="website" {...register("website")} className="text-input" />
+          <Input id="website" {...register("website")} />
           {errors.website && (
             <p className="text-red-500">{errors.website.message}</p>
           )}
@@ -370,7 +463,7 @@ export default function Container({
               accept=".png,.jpg,.jpeg"
               ref={backgroundImageRef}
               onChange={handleBackgroundImageChange}
-              className="pl-8 text-input file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
+              className="pl-8 text-white file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
               style={{ paddingTop: 5 }}
             />
             <div
@@ -478,6 +571,12 @@ export default function Container({
           <div className="flex items-center justify-between mb-2">
             <h2 className="text-xl font-semibold mb-2">Functions</h2>
             <div className="flex space-x-2">
+              <Button onClick={handleAddText}>
+                Add Text <PlusIcon className="h-4 w-4 ml-2" />
+              </Button>
+              <Button onClick={handleAddSeparator}>
+                Add Separator <PlusIcon className="h-4 w-4 ml-2" />
+              </Button>
               <Drawer>
                 <DrawerTrigger asChild>
                   <Button>
@@ -536,112 +635,279 @@ export default function Container({
                   ref={provided.innerRef}
                   className="space-y-2"
                 >
-                  {functions.map((func, index) => (
-                    <Draggable
-                      key={func.id}
-                      draggableId={func.id}
-                      index={index}
-                    >
-                      {(provided: DraggableProvided) => (
-                        <div
-                          ref={provided.innerRef}
-                          {...provided.draggableProps}
-                          {...provided.dragHandleProps}
-                          className={cn(
-                            "flex items-center justify-between p-2 rounded",
-                            func.selected
-                              ? "bg-gray-100 text-black border border-accent"
-                              : "bg-gray-50 text-black/70 border border-gray-300"
-                          )}
-                        >
-                          <div className="flex items-center flex-grow space-x-2">
-                            <div>
-                              <DragHandleHorizontalIcon className="h-8 w-8 text-muted-foreground" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="flex items-center">
-                                {func.name}
-                                <Popover
-                                  open={openPopoverId === func.id}
-                                  onOpenChange={(open) =>
-                                    setOpenPopoverId(open ? func.id : null)
-                                  }
-                                >
-                                  <PopoverTrigger asChild>
-                                    <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
-                                  </PopoverTrigger>
-                                  <PopoverContent className="w-80">
-                                    <div className="space-y-2">
-                                      <h4 className="font-medium">
-                                        Edit Function Name
-                                      </h4>
-                                      <Input
-                                        defaultValue={func.name}
-                                        className="text-input"
-                                        onKeyDown={(e) => {
-                                          if (e.key === "Enter") {
-                                            handleEditFunctionName(
-                                              func.id,
-                                              e.currentTarget.value
-                                            );
-                                          }
-                                        }}
-                                        onChange={(e) => {
-                                          handleEditFunctionName(
-                                            func.id,
-                                            e.currentTarget.value,
-                                            false
-                                          );
-                                        }}
-                                      />
-                                      <div className="flex justify-end">
-                                        <Button
-                                          size="sm"
-                                          onClick={() => {
-                                            setOpenPopoverId(null);
-                                          }}
-                                        >
-                                          Close
-                                        </Button>
-                                      </div>
-                                    </div>
-                                  </PopoverContent>
-                                </Popover>
-                              </span>
-                              <span className="text-muted-foreground text-xs">
-                                {func.id}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            {func.link && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => handleDeleteFunction(func.id)}
-                                className="text-red-500 hover:text-red-700 hover:bg-red-100"
-                              >
-                                <Trash2Icon className="h-4 w-4" />
-                              </Button>
+                  {functions.map((func, index) => {
+                    let rowType = "function";
+                    if (func.text) {
+                      rowType = "text";
+                    } else if (func.separator) {
+                      rowType = "separator";
+                    } else if (func.link) {
+                      rowType = "link";
+                    }
+                    return (
+                      <Draggable
+                        key={func.id}
+                        draggableId={func.id}
+                        index={index}
+                      >
+                        {(provided: DraggableProvided) => (
+                          <div
+                            ref={provided.innerRef}
+                            {...provided.draggableProps}
+                            {...provided.dragHandleProps}
+                            className={cn(
+                              "flex items-center justify-between p-2 rounded",
+                              func.selected
+                                ? "bg-gray-100 text-black border border-accent"
+                                : "bg-gray-50 text-black/70 border border-gray-300"
                             )}
-                            <div
-                              className={cn(
-                                "p-4 hover:bg-white hover:text-black rounded-full cursor-pointer",
-                                func.selected ? "text-black" : "text-black/70"
+                          >
+                            <div className="flex items-center flex-grow space-x-2">
+                              <div>
+                                <DragHandleHorizontalIcon className="h-8 w-8 text-muted-foreground" />
+                              </div>
+                              <div className="flex flex-col">
+                                <span className="flex items-center">
+                                  {(rowType === "function" ||
+                                    rowType === "link") &&
+                                    func.name}
+                                  {rowType === "text" && (
+                                    <div
+                                      className={cn(
+                                        "text-black",
+                                        abiTextStyleClasses[
+                                          func.text?.style || "h1"
+                                        ]
+                                      )}
+                                    >
+                                      {func.text?.text}
+                                    </div>
+                                  )}
+                                  {rowType === "separator" && (
+                                    <div
+                                      className="w-full"
+                                      style={{
+                                        borderTop: `${func.separator?.width}px ${func.separator?.style} ${func.separator?.color}`,
+                                      }}
+                                    />
+                                  )}
+                                  <Popover
+                                    open={openPopoverId === func.id}
+                                    onOpenChange={(open) =>
+                                      setOpenPopoverId(open ? func.id : null)
+                                    }
+                                  >
+                                    <PopoverTrigger asChild>
+                                      <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
+                                    </PopoverTrigger>
+                                    <PopoverContent className="w-80">
+                                      <div className="space-y-2">
+                                        {rowType === "function" && (
+                                          <>
+                                            <h4 className="font-medium">
+                                              Edit Function Name
+                                            </h4>
+                                            <Input
+                                              defaultValue={func.name}
+                                              className="text-white"
+                                              onKeyDown={(e) => {
+                                                if (e.key === "Enter") {
+                                                  handleEditFunctionName(
+                                                    func.id,
+                                                    e.currentTarget.value
+                                                  );
+                                                }
+                                              }}
+                                              onChange={(e) => {
+                                                handleEditFunctionName(
+                                                  func.id,
+                                                  e.currentTarget.value,
+                                                  false
+                                                );
+                                              }}
+                                            />
+                                          </>
+                                        )}
+                                        {rowType === "text" && (
+                                          <>
+                                            <h4 className="font-medium">
+                                              Edit Text
+                                            </h4>
+                                            <Input
+                                              defaultValue={
+                                                func.text?.text || ""
+                                              }
+                                              className="text-white"
+                                              onChange={(e) => {
+                                                handleEditText(
+                                                  func.id,
+                                                  e.currentTarget.value,
+                                                  func.text?.style || "normal"
+                                                );
+                                              }}
+                                            />
+                                            <Select
+                                              defaultValue={
+                                                func.text?.style || "normal"
+                                              }
+                                              onValueChange={(value) => {
+                                                handleEditText(
+                                                  func.id,
+                                                  func.text?.text || "",
+                                                  value
+                                                );
+                                              }}
+                                            >
+                                              <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select style" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="h1">
+                                                  Heading 1
+                                                </SelectItem>
+                                                <SelectItem value="h2">
+                                                  Heading 2
+                                                </SelectItem>
+                                                <SelectItem value="h3">
+                                                  Heading 3
+                                                </SelectItem>
+                                                <SelectItem value="h4">
+                                                  Heading 4
+                                                </SelectItem>
+                                                <SelectItem value="h5">
+                                                  Heading 5
+                                                </SelectItem>
+                                                <SelectItem value="h6">
+                                                  Heading 6
+                                                </SelectItem>
+                                                <SelectItem value="normal">
+                                                  Normal
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                          </>
+                                        )}
+                                        {rowType === "separator" && (
+                                          <>
+                                            <h4 className="font-medium">
+                                              Edit Separator
+                                            </h4>
+                                            <Select
+                                              defaultValue={
+                                                func.separator?.style || "solid"
+                                              }
+                                              onValueChange={(value) => {
+                                                handleEditSeparator(
+                                                  func.id,
+                                                  value,
+                                                  func.separator?.color ||
+                                                    "#000000",
+                                                  func.separator?.width || 1
+                                                );
+                                              }}
+                                            >
+                                              <SelectTrigger className="w-full">
+                                                <SelectValue placeholder="Select style" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                <SelectItem value="solid">
+                                                  Solid
+                                                </SelectItem>
+                                                <SelectItem value="dashed">
+                                                  Dashed
+                                                </SelectItem>
+                                                <SelectItem value="dotted">
+                                                  Dotted
+                                                </SelectItem>
+                                              </SelectContent>
+                                            </Select>
+                                            <Input
+                                              type="color"
+                                              defaultValue={
+                                                func.separator?.color ||
+                                                "#000000"
+                                              }
+                                              onChange={(e) => {
+                                                handleEditSeparator(
+                                                  func.id,
+                                                  func.separator?.style ||
+                                                    "solid",
+                                                  e.target.value,
+                                                  func.separator?.width || 1
+                                                );
+                                              }}
+                                            />
+                                            <div className="space-y-2">
+                                              <Label>Width</Label>
+                                              <Slider
+                                                defaultValue={[
+                                                  func.separator?.width || 1,
+                                                ]}
+                                                max={10}
+                                                step={1}
+                                                onValueChange={(value) => {
+                                                  handleEditSeparator(
+                                                    func.id,
+                                                    func.separator?.style ||
+                                                      "solid",
+                                                    func.separator?.color ||
+                                                      "#000000",
+                                                    value[0]
+                                                  );
+                                                }}
+                                              />
+                                            </div>
+                                          </>
+                                        )}
+                                        <div className="flex justify-end">
+                                          <Button
+                                            size="sm"
+                                            onClick={() => {
+                                              setOpenPopoverId(null);
+                                            }}
+                                          >
+                                            Close
+                                          </Button>
+                                        </div>
+                                      </div>
+                                    </PopoverContent>
+                                  </Popover>
+                                </span>
+                                <span className="text-muted-foreground text-xs">
+                                  {func.id}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              {rowType !== "function" && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => handleDeleteFunction(func.id)}
+                                  className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                                >
+                                  <Trash2Icon className="h-4 w-4" />
+                                </Button>
                               )}
-                              onClick={() => handleToggleSelected(func.id)}
-                            >
-                              {func.selected ? (
-                                <CheckCircle className="h-4 w-4" />
-                              ) : (
-                                <Circle className="h-4 w-4" />
-                              )}
+                              <div
+                                className={cn(
+                                  "p-4 hover:bg-white hover:text-black rounded-full cursor-pointer",
+                                  func.selected ? "text-black" : "text-black/70"
+                                )}
+                                onClick={() => handleToggleSelected(func.id)}
+                              >
+                                {func.selected ? (
+                                  <CheckCircle className="h-4 w-4" />
+                                ) : (
+                                  <Circle className="h-4 w-4" />
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      )}
-                    </Draggable>
-                  ))}
+                        )}
+                      </Draggable>
+                    );
+                  })}
                   {provided.placeholder}
                 </div>
               )}

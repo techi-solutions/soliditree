@@ -37,7 +37,7 @@ import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Network } from "@/constants/networks";
-import { ExtendedAbiItem } from "@/services/scan";
+import { abiTextStyleClasses, ExtendedAbiItem } from "@/services/scan";
 import {
   ContractReadFunction,
   ContractWriteFunction,
@@ -744,6 +744,32 @@ export default function Container({
                     <ExternalLinkIcon className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
+              );
+            }
+
+            if (func.separator) {
+              return (
+                <div
+                  key={func.id}
+                  className="w-full mb-4"
+                  style={{
+                    borderTop: `${func.separator.width}px ${func.separator.style} ${func.separator.color}`,
+                  }}
+                />
+              );
+            }
+
+            if (func.text) {
+              return (
+                <div
+                  key={func.id}
+                  className={cn(
+                    "w-full mb-4",
+                    abiTextStyleClasses[func.text.style]
+                  )}
+                >
+                  <p>{func.text.text}</p>
+                </div>
               );
             }
 

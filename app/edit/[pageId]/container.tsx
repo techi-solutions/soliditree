@@ -14,8 +14,41 @@ import { Progress } from "@/components/ui/progress";
 import { Loader2, ImageIcon } from "lucide-react";
 import Image from "next/image";
 import ColorPickerInput from "@/components/ColorPickerInput";
-import { ExtendedAbi } from "@/services/scan";
+import { ExtendedAbi, ExtendedAbiItem } from "@/services/scan";
 import { ContractPagesUpdatePageContentHash } from "@/services/contractPages/client";
+import {
+  DragDropContext,
+  Droppable,
+  Draggable,
+  DroppableProvided,
+  DraggableProvided,
+  DropResult,
+} from "@hello-pangea/dnd";
+import {
+  CheckCircle,
+  Circle,
+  Pencil,
+  Trash2Icon,
+  PlusIcon,
+} from "lucide-react";
+import { DragHandleHorizontalIcon } from "@radix-ui/react-icons";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerTrigger,
+} from "@/components/ui/drawer";
+import { generateRandomString } from "@/utils/random";
+import { keccak256, stringToBytes } from "viem";
+import { cn } from "@/lib/utils";
 
 const formSchema = z.object({
   title: z.string().min(1, "Your page needs a title"),
@@ -141,12 +174,12 @@ export default function Container({
         formData.append("backgroundImage", backgroundImageRef.current.files[0]);
       }
 
-      // Use the existing functions from the contractPage
-      const functions = contractPage.functions;
+      // Use the updated functions
+      const updatedFunctions = functions.filter((func) => func.selected);
 
       const { newHash, uploadData, oldHash } = await handleEditPage(
         formData,
-        functions,
+        updatedFunctions,
         colors
       );
       console.log("New IPFS hash:", newHash);
@@ -201,6 +234,73 @@ export default function Container({
       }
       setBackgroundObjectUrl(null);
     }
+  };
+
+  const [functions, setFunctions] = useState<ExtendedAbi>(
+    contractPage.functions || []
+  );
+  const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
+  const linkNameRef = useRef<HTMLInputElement>(null);
+  const linkUrlRef = useRef<HTMLInputElement>(null);
+
+  const onDragEnd = (result: DropResult) => {
+    if (!result.destination) return;
+    const items = Array.from(functions);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+    setFunctions(items);
+  };
+
+  const handleToggleSelected = (id: string) => {
+    setFunctions(
+      functions.map((func) =>
+        func.id === id ? { ...func, selected: !func.selected } : func
+      )
+    );
+  };
+
+  const handleToggleSelectAll = () => {
+    const selected = functions.every((func) => func.selected);
+    setFunctions(functions.map((func) => ({ ...func, selected: !selected })));
+  };
+
+  const handleEditFunctionName = (
+    id: string,
+    newName: string,
+    close = true
+  ) => {
+    if (!newName) {
+      return;
+    }
+    setFunctions(
+      functions.map((func) =>
+        func.id === id ? { ...func, name: newName } : func
+      )
+    );
+    if (close) {
+      setOpenPopoverId(null);
+    }
+  };
+
+  const handleAddLink = (name: string, url: string) => {
+    const link: ExtendedAbiItem = {
+      id: `link(${url}) (${generateRandomString(4)})`,
+      signature: keccak256(stringToBytes(`link(${url})`)),
+      name,
+      link: {
+        url,
+      },
+      selected: true,
+      type: "function",
+      inputs: [],
+      outputs: [],
+      stateMutability: "view",
+    };
+    setFunctions([link, ...functions]);
+  };
+
+  const handleDeleteFunction = (id: string) => {
+    setFunctions(functions.filter((func) => func.id !== id));
   };
 
   return (
@@ -372,6 +472,181 @@ export default function Container({
               </div>
             </div>
           </div>
+        </div>
+
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h2 className="text-xl font-semibold mb-2">Functions</h2>
+            <div className="flex space-x-2">
+              <Drawer>
+                <DrawerTrigger asChild>
+                  <Button>
+                    Add Link <PlusIcon className="h-4 w-4 ml-2" />
+                  </Button>
+                </DrawerTrigger>
+                <DrawerContent>
+                  <DrawerHeader>
+                    <DrawerTitle>Add Link</DrawerTitle>
+                    <DrawerDescription>
+                      Create a new link for your contract page.
+                    </DrawerDescription>
+                  </DrawerHeader>
+                  <div className="p-4 space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="linkName">Link Name</Label>
+                      <Input
+                        id="linkName"
+                        placeholder="Enter link name"
+                        className="text-white"
+                        ref={linkNameRef}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="linkUrl">URL</Label>
+                      <Input
+                        id="linkUrl"
+                        placeholder="Enter URL"
+                        ref={linkUrlRef}
+                        className="text-white"
+                      />
+                    </div>
+                    <DrawerClose asChild>
+                      <Button
+                        onClick={() => {
+                          const linkName = linkNameRef.current?.value || "";
+                          const linkUrl = linkUrlRef.current?.value || "";
+                          handleAddLink(linkName, linkUrl);
+                        }}
+                        className="w-full"
+                      >
+                        Create Link
+                      </Button>
+                    </DrawerClose>
+                  </div>
+                </DrawerContent>
+              </Drawer>
+              <Button onClick={handleToggleSelectAll}>Select All</Button>
+            </div>
+          </div>
+          <DragDropContext onDragEnd={onDragEnd}>
+            <Droppable droppableId="functions">
+              {(provided: DroppableProvided) => (
+                <div
+                  {...provided.droppableProps}
+                  ref={provided.innerRef}
+                  className="space-y-2"
+                >
+                  {functions.map((func, index) => (
+                    <Draggable
+                      key={func.id}
+                      draggableId={func.id}
+                      index={index}
+                    >
+                      {(provided: DraggableProvided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className={cn(
+                            "flex items-center justify-between p-2 rounded",
+                            func.selected
+                              ? "bg-gray-100 text-black border border-accent"
+                              : "bg-gray-50 text-black/70 border border-gray-300"
+                          )}
+                        >
+                          <div className="flex items-center flex-grow space-x-2">
+                            <div>
+                              <DragHandleHorizontalIcon className="h-8 w-8 text-muted-foreground" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="flex items-center">
+                                {func.name}
+                                <Popover
+                                  open={openPopoverId === func.id}
+                                  onOpenChange={(open) =>
+                                    setOpenPopoverId(open ? func.id : null)
+                                  }
+                                >
+                                  <PopoverTrigger asChild>
+                                    <Pencil className="h-4 w-4 ml-2 text-muted-foreground cursor-pointer hover:text-black" />
+                                  </PopoverTrigger>
+                                  <PopoverContent className="w-80">
+                                    <div className="space-y-2">
+                                      <h4 className="font-medium">
+                                        Edit Function Name
+                                      </h4>
+                                      <Input
+                                        defaultValue={func.name}
+                                        className="text-input"
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            handleEditFunctionName(
+                                              func.id,
+                                              e.currentTarget.value
+                                            );
+                                          }
+                                        }}
+                                        onChange={(e) => {
+                                          handleEditFunctionName(
+                                            func.id,
+                                            e.currentTarget.value,
+                                            false
+                                          );
+                                        }}
+                                      />
+                                      <div className="flex justify-end">
+                                        <Button
+                                          size="sm"
+                                          onClick={() => {
+                                            setOpenPopoverId(null);
+                                          }}
+                                        >
+                                          Close
+                                        </Button>
+                                      </div>
+                                    </div>
+                                  </PopoverContent>
+                                </Popover>
+                              </span>
+                              <span className="text-muted-foreground text-xs">
+                                {func.id}
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            {func.link && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleDeleteFunction(func.id)}
+                                className="text-red-500 hover:text-red-700 hover:bg-red-100"
+                              >
+                                <Trash2Icon className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <div
+                              className={cn(
+                                "p-4 hover:bg-white hover:text-black rounded-full cursor-pointer",
+                                func.selected ? "text-black" : "text-black/70"
+                              )}
+                              onClick={() => handleToggleSelected(func.id)}
+                            >
+                              {func.selected ? (
+                                <CheckCircle className="h-4 w-4" />
+                              ) : (
+                                <Circle className="h-4 w-4" />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          </DragDropContext>
         </div>
 
         <div className="fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">

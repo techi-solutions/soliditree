@@ -463,7 +463,7 @@ export default function Container({
                   Enter a name and select duration to reserve
                 </SheetDescription>
               </SheetHeader>
-              <div className="space-y-4 w-full max-w-xs">
+              <div className="space-y-4 w-full max-w-md">
                 <div>
                   <Label htmlFor="reserve-name">Name</Label>
                   <div className="relative">
@@ -472,7 +472,11 @@ export default function Container({
                       value={reserveName}
                       onChange={handleNameChange}
                       placeholder="Enter name"
+                      className="pl-6"
                     />
+                    <p className="absolute left-3 top-1.5 text-muted-foreground">
+                      /
+                    </p>
                     {isCheckingName && (
                       <Loader2 className="absolute right-2 top-3 h-4 w-4 animate-spin" />
                     )}

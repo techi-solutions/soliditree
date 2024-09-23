@@ -26,6 +26,7 @@ import {
   Loader2,
   Trash2Icon,
   PlusIcon,
+  ExternalLinkIcon,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useChainId } from "wagmi";
@@ -127,6 +128,7 @@ export default function Container({
     null
   );
 
+  const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
   const [creationStatus, setCreationStatus] = useState<
     "idle" | "approval" | "uploading" | "creating" | "success" | "error"
   >("idle");
@@ -204,7 +206,10 @@ export default function Container({
       const pageId = await ContractPagesCreatePage(
         contractAddress,
         `ipfs://${hash}`,
-        () => setCreationStatus("creating")
+        (txHash) => {
+          setPendingTxHash(txHash);
+          setCreationStatus("creating");
+        }
       );
       console.log("pageId", pageId);
       setCreationStatus("success");
@@ -219,6 +224,7 @@ export default function Container({
     } catch (error) {
       console.error("Error creating page:", error);
       setCreationStatus("error");
+      setPendingTxHash(null);
       return;
       // Handle error (e.g., show error message to user)
     }
@@ -410,6 +416,14 @@ export default function Container({
           : func
       )
     );
+  };
+
+  const handlePendingTxExplorer = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (!pendingTxHash || typeof window === "undefined") {
+      return;
+    }
+    window.open(`${network.explorer}/tx/${pendingTxHash}`, "_blank");
   };
 
   const supportedChain = chains.some((chain) => chain.id === selectedChainId);
@@ -735,6 +749,11 @@ export default function Container({
                   </div>
                 </div>
               ) : null}
+              {pendingTxHash && (
+                <Button onClick={handlePendingTxExplorer}>
+                  View on Explorer <ExternalLinkIcon className="h-4 w-4 ml-2" />
+                </Button>
+              )}
             </div>
           </div>
         </form>

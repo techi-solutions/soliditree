@@ -16,7 +16,7 @@ import { NETWORKS } from "@/constants/networks";
 export const ContractPagesCreatePage = async (
   contractAddress: string,
   contentHash: string,
-  onCreating: () => void
+  onCreating: (txHash: string) => void
 ) => {
   const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
@@ -39,7 +39,7 @@ export const ContractPagesCreatePage = async (
 
   const result = await writeContract(wagmiAdapter.wagmiConfig, request);
 
-  onCreating();
+  onCreating(result);
 
   const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,

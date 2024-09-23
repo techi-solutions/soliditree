@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     return defaultMetadata;
   }
 
-  const network = NETWORKS["100"];
+  const network = NETWORKS["8453"];
   if (!network) {
     return defaultMetadata;
   }
@@ -67,7 +67,7 @@ export default async function Page({ params }: Props) {
     return <div>Page id is required</div>;
   }
 
-  const network = NETWORKS["100"];
+  const network = NETWORKS["8453"];
   if (!network) {
     return <div>Network not found</div>;
   }

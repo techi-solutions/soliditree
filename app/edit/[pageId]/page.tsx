@@ -13,7 +13,7 @@ const ipfsService = new IPFSService(
 export default async function Page({ params }: { params: { pageId: string } }) {
   const { pageId } = params;
 
-  const network = NETWORKS["100"];
+  const network = NETWORKS["8453"];
   if (!network) {
     return <div>Network not found</div>;
   }

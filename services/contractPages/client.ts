@@ -18,7 +18,7 @@ export const ContractPagesCreatePage = async (
   contentHash: string,
   onCreating: () => void
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     return;
   }
@@ -74,7 +74,7 @@ export const ContractPagesUpdatePageContentHash = async (
   contentHash: string,
   onUpdating: () => void
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     return;
   }
@@ -115,7 +115,7 @@ export const ContractPagesDestroyPage = async (
   pageId: string,
   onDestroying: () => void
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     return;
   }
@@ -150,7 +150,7 @@ export const ContractPagesDonate = async (
   amount: string,
   onCreating: () => void
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     return;
   }
@@ -190,7 +190,7 @@ export const ContractPagesReserveName = async (
   onReserving: () => void,
   ethAmount?: string
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     return;
   }
@@ -227,7 +227,7 @@ export const ContractPagesReserveName = async (
 export const ContractPagesGetReservedName = async (
   name: string
 ): Promise<boolean> => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     throw new Error("Network not found");
   }
@@ -256,7 +256,7 @@ export const ContractPagesCalculateReservationCost = async (
   months: number,
   name: string
 ): Promise<bigint> => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     throw new Error("Network not found");
   }
@@ -275,7 +275,7 @@ export const ContractPagesCalculateReservationCost = async (
 };
 
 export const ContractPagesShortNameThreshold = async (): Promise<number> => {
-  const caipNetwork = networks.find((n) => n.chainId === 100);
+  const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
     throw new Error("Network not found");
   }

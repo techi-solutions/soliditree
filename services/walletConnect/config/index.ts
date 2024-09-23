@@ -2,7 +2,7 @@
 
 import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
 
-import { cookieStorage, createStorage } from "wagmi";
+import { createStorage } from "wagmi";
 import {
   base as baseWagmi,
   polygon as polygonWagmi,
@@ -12,7 +12,8 @@ import {
 } from "wagmi/chains";
 import { base, polygon, gnosis, celo, arbitrum } from "@reown/appkit/networks";
 import { NETWORKS } from "@/constants/networks";
-import { Chain, http } from "viem";
+import { Chain, defineChain, http } from "viem";
+import { localWagmiStorage } from "./local";
 
 // Your WalletConnect Cloud project ID
 export const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
@@ -31,7 +32,7 @@ export const networks = [
 ];
 
 export const chains = [
-  {
+  defineChain({
     ...baseWagmi,
     rpcUrls: {
       default: {
@@ -39,8 +40,8 @@ export const chains = [
         webSocket: [NETWORKS["8453"].wsRpcUrl],
       },
     },
-  },
-  {
+  }),
+  defineChain({
     ...polygonWagmi,
     rpcUrls: {
       default: {
@@ -48,8 +49,8 @@ export const chains = [
         webSocket: [NETWORKS["137"].wsRpcUrl],
       },
     },
-  },
-  {
+  }),
+  defineChain({
     ...gnosisWagmi,
     rpcUrls: {
       default: {
@@ -57,8 +58,8 @@ export const chains = [
         webSocket: [NETWORKS["100"].wsRpcUrl],
       },
     },
-  },
-  {
+  }),
+  defineChain({
     ...celoWagmi,
     rpcUrls: {
       default: {
@@ -66,8 +67,8 @@ export const chains = [
         webSocket: [NETWORKS["42220"].wsRpcUrl],
       },
     },
-  },
-  {
+  }),
+  defineChain({
     ...arbitrumWagmi,
     rpcUrls: {
       default: {
@@ -75,9 +76,9 @@ export const chains = [
         webSocket: [NETWORKS["42161"].wsRpcUrl],
       },
     },
-  },
+  }),
 ] as readonly [Chain, ...Chain[]];
-console.log("chains", chains);
+
 export const wagmiAdapter = new WagmiAdapter({
   chains,
   networks,
@@ -91,7 +92,7 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   storage: createStorage({
-    storage: cookieStorage,
+    storage: localWagmiStorage,
   }),
   //   ...wagmiOptions, // Optional - Override createConfig parameters
 });

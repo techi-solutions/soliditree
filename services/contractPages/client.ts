@@ -72,7 +72,7 @@ export const ContractPagesCreatePage = async (
 export const ContractPagesUpdatePageContentHash = async (
   pageId: string,
   contentHash: string,
-  onUpdating: () => void
+  onUpdating: (txHash: string) => void
 ) => {
   const caipNetwork = networks.find((n) => n.chainId === 8453);
   if (!caipNetwork) {
@@ -99,7 +99,7 @@ export const ContractPagesUpdatePageContentHash = async (
 
   const result = await writeContract(wagmiAdapter.wagmiConfig, request);
 
-  onUpdating();
+  onUpdating(result);
 
   const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
     hash: result,

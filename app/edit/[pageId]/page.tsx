@@ -107,6 +107,7 @@ export default async function Page({ params }: { params: { pageId: string } }) {
   return (
     <Container
       pageId={pageId}
+      network={network}
       resolvedPageId={resolvedPageId}
       contractPage={page}
       editPage={editPage}

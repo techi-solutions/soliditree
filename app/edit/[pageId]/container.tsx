@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useRouter } from "next/navigation";
 import { ContractPage, ContractPageColors } from "@/services/contractPages";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, ImageIcon } from "lucide-react";
+import { Loader2, ImageIcon, ExternalLinkIcon } from "lucide-react";
 import Image from "next/image";
 import ColorPickerInput from "@/components/ColorPickerInput";
 import {
@@ -62,6 +62,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Network } from "@/constants/networks";
 
 const formSchema = z.object({
   title: z.string().min(1, "Your page needs a title"),
@@ -82,6 +83,7 @@ type EditPageFormData = z.infer<typeof formSchema>;
 
 export default function Container({
   pageId,
+  network,
   resolvedPageId,
   contractPage,
   editPage,
@@ -89,6 +91,7 @@ export default function Container({
 }: {
   pageId: string;
   resolvedPageId: string;
+  network: Network;
   contractPage: ContractPage;
   editPage: (
     formData: FormData,
@@ -126,6 +129,7 @@ export default function Container({
     | "success"
     | "error"
   >("idle");
+  const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
 
   console.log(iconObjectUrl);
 
@@ -202,7 +206,10 @@ export default function Container({
       await ContractPagesUpdatePageContentHash(
         resolvedPageId,
         `ipfs://${newHash}`,
-        () => setEditStatus("updating")
+        (txHash) => {
+          setEditStatus("updating");
+          setPendingTxHash(txHash);
+        }
       );
 
       setEditStatus("unpinning");
@@ -216,6 +223,7 @@ export default function Container({
     } catch (error) {
       console.error("Error updating page:", error);
       setEditStatus("error");
+      setPendingTxHash(null);
     }
   };
 
@@ -394,6 +402,14 @@ export default function Container({
           : func
       )
     );
+  };
+
+  const handlePendingTxExplorer = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    if (!pendingTxHash || typeof window === "undefined") {
+      return;
+    }
+    window.open(`${network.explorer}/tx/${pendingTxHash}`, "_blank");
   };
 
   return (
@@ -955,6 +971,11 @@ export default function Container({
                   <Loader2 className="ml-2 h-4 w-4 animate-spin" />
                 </div>
               </div>
+            )}
+            {pendingTxHash && (
+              <Button onClick={handlePendingTxExplorer}>
+                View on Explorer <ExternalLinkIcon className="h-4 w-4 ml-2" />
+              </Button>
             )}
           </div>
         </div>

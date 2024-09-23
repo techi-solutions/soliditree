@@ -9,7 +9,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createAppKit } from "@reown/appkit/react";
 import React, { type ReactNode } from "react";
 import { cookieToInitialState, WagmiProvider, type Config } from "wagmi";
-import Favicon from "@/public/favicon.ico";
 
 // Set up queryClient
 const queryClient = new QueryClient();
@@ -23,7 +22,7 @@ const metadata = {
   name: "Soliditree",
   description: "An interface for your smart contracts",
   url: "https://soliditree.xyz", // origin must match your domain & subdomain
-  icons: [Favicon.src],
+  icons: ["https://soliditree.xyz/favicon.ico"],
 };
 
 // Create the modal

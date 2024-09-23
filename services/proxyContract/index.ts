@@ -32,13 +32,49 @@ export class ProxyContractService {
     try {
       const ERC1967_IMPLEMENTATION_SLOT =
         "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";
-      const implementationAddress = await this.client.getStorageAt({
+      let implementationAddress = await this.client.getStorageAt({
         address: this.contractAddress as `0x${string}`,
         slot: ERC1967_IMPLEMENTATION_SLOT,
       });
 
-      if (!implementationAddress) {
-        return this.contractAddress;
+      console.log("implementationAddress", implementationAddress);
+
+      if (
+        !implementationAddress ||
+        implementationAddress === "0x" ||
+        implementationAddress ===
+          "0x0000000000000000000000000000000000000000000000000000000000000000"
+      ) {
+        // try to read the implementation address from the proxy contract
+        const proxyContractClient = getContract({
+          address: this.contractAddress as `0x${string}`,
+          abi: [
+            {
+              constant: true,
+              inputs: [],
+              name: "implementation",
+              outputs: [
+                {
+                  name: "",
+                  type: "address",
+                },
+              ],
+              payable: false,
+              stateMutability: "view",
+              type: "function",
+            },
+          ],
+          client: this.client,
+        });
+        implementationAddress = await proxyContractClient.read.implementation();
+        if (
+          !implementationAddress ||
+          implementationAddress === "0x" ||
+          implementationAddress ===
+            "0x0000000000000000000000000000000000000000000000000000000000000000"
+        ) {
+          return this.contractAddress;
+        }
       }
 
       // Trim leading zeros and take the last 40 characters (20 bytes) for the address

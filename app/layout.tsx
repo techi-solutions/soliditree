@@ -4,7 +4,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { headers } from "next/headers";
 import ContextProvider from "@/services/walletConnect/context";
-import Favicon from "@/public/favicon.ico";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -21,7 +20,11 @@ export const metadata: Metadata = {
   title: "Soliditree",
   description: "An interface for your smart contracts",
   icons: {
-    icon: Favicon.src,
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/assets/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: "/assets/apple-icon.png",
   },
 };
 

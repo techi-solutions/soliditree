@@ -4,7 +4,6 @@ import { ContractPage, ContractPagesService } from "@/services/contractPages";
 import IPFSService from "@/services/ipfs";
 import { Suspense } from "react";
 import Container from "./container";
-import Favicon from "@/public/favicon.ico";
 
 type Props = {
   params: { pageId: string };
@@ -17,7 +16,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: "Soliditree",
     description: "An interface for your smart contracts",
     icons: {
-      icon: "/favicon.ico",
+      icon: [
+        { url: "/favicon.ico", sizes: "any" },
+        { url: "/assets/icon.svg", type: "image/svg+xml" },
+      ],
+      apple: "/assets/apple-icon.png",
     },
   };
   if (!pageId) {
@@ -52,7 +55,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title: page?.title || "Contract Page",
       description: page?.description || "View contract details",
       icons: {
-        icon: page?.icon || Favicon.src,
+        icon: page?.icon || "/favicon.ico",
       },
     };
   } catch (error) {

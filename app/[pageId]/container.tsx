@@ -68,6 +68,7 @@ import {
 import { formatEther } from "viem";
 import debounce from "debounce";
 import { Badge } from "@/components/ui/badge";
+import { extractFunctionNameFromId } from "@/utils/functions";
 
 export default function Container({
   pageId,
@@ -147,12 +148,14 @@ export default function Container({
         formatArg(input.type, functionArgs[func.id]?.[input.name!] || "")
       );
 
+      const functionName = extractFunctionNameFromId(func.id);
+
       const receipt = await ContractWriteFunction(
         network,
         contractData.contractAddress,
-        func.name,
+        functionName,
         formattedArgs,
-        [func],
+        [{ ...func, name: functionName }],
         () => {
           setTxStatus("creating");
         },
@@ -180,12 +183,14 @@ export default function Container({
         formatArg(input.type, functionArgs[func.id]?.[input.name!] || "")
       );
 
+      const functionName = extractFunctionNameFromId(func.id);
+
       const result = await ContractReadFunction(
         network,
         contractData.contractAddress,
-        func.name,
+        functionName,
         formattedArgs,
-        [func]
+        [{ ...func, name: functionName }]
       );
       setTxStatus("success");
       setTimeout(() => {

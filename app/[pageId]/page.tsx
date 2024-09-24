@@ -52,6 +52,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const page = await ipfsService.getJSON(hash);
 
     const iconUrl = page?.icon || "/favicon.ico";
+    const pageLogoUrl = page?.icon || "/assets/logo.png";
     const title = page?.title || "Contract Page";
     const description = page?.description || "View contract details";
     const themeColor = page?.colors?.background || "#0f766e"; // Default color if not set
@@ -64,23 +65,23 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           { url: iconUrl, sizes: "any" },
           { url: "/assets/icon.svg", type: "image/svg+xml" },
         ],
-        apple: "/assets/apple-icon.png",
+        apple: pageLogoUrl,
       },
       themeColor,
       openGraph: {
         title,
         description,
-        images: [{ url: iconUrl }],
+        images: [{ url: pageLogoUrl }],
         type: "website",
       },
       twitter: {
         card: "summary",
         title,
         description,
-        images: [iconUrl],
+        images: [pageLogoUrl],
       },
       other: {
-        "msapplication-TileImage": "/assets/ms-icon-144x144.png",
+        "msapplication-TileImage": pageLogoUrl,
         "msapplication-TileColor": themeColor,
       },
     };

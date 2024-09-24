@@ -35,7 +35,7 @@ export class ClipboardService {
 
     this.items.push(item);
 
-    if (this.items.length > 10) {
+    if (this.items.length > 30) {
       this.items.shift();
     }
 

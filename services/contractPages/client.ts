@@ -13,6 +13,8 @@ import { extractEventData } from "@/utils/events";
 import { AbiItem, parseEther, stringToHex } from "viem";
 import { NETWORKS } from "@/constants/networks";
 
+const DEFAULT_TIMEOUT = 120000;
+
 export const ContractPagesCreatePage = async (
   contractAddress: string,
   contentHash: string,
@@ -44,6 +46,7 @@ export const ContractPagesCreatePage = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
@@ -101,6 +104,7 @@ export const ContractPagesUpdatePageContentHash = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
@@ -137,6 +141,7 @@ export const ContractPagesDestroyPage = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
@@ -175,6 +180,7 @@ export const ContractPagesDonate = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
@@ -187,7 +193,7 @@ export const ContractPagesReserveName = async (
   pageId: string,
   name: string,
   durationInMonths: number,
-  onReserving: () => void,
+  onReserving: (txHash: string) => void,
   ethAmount?: string
 ) => {
   const chainId = 8453;
@@ -213,10 +219,11 @@ export const ContractPagesReserveName = async (
 
   const result = await writeContract(wagmiConfig, request);
 
-  onReserving();
+  onReserving(result);
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
@@ -362,6 +369,7 @@ export const ContractPagesReleaseName = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");

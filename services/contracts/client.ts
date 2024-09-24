@@ -10,6 +10,8 @@ import { wagmiConfig } from "../walletConnect/config";
 import { AbiItem, parseEther } from "viem";
 import { Network } from "@/constants/networks";
 
+const DEFAULT_TIMEOUT = 120000;
+
 export const ContractWriteFunction = async (
   network: Network,
   contractAddress: string,
@@ -35,6 +37,7 @@ export const ContractWriteFunction = async (
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
+    timeout: DEFAULT_TIMEOUT,
   });
 
   if (receipt.status !== "success") {

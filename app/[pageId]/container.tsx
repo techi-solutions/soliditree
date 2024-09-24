@@ -438,8 +438,9 @@ export default function Container({
         pageId,
         reserveName,
         durationInMonths,
-        () => {
+        (txHash: string) => {
           setTxStatus("creating");
+          setTxHash(txHash);
         },
         isContractOwner ? undefined : ethAmount
       );

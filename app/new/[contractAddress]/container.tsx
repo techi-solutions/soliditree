@@ -128,6 +128,8 @@ export default function Container({
     null
   );
 
+  const disableChainSwitchingRef = useRef(false);
+
   const [pendingTxHash, setPendingTxHash] = useState<string | null>(null);
   const [creationStatus, setCreationStatus] = useState<
     "idle" | "approval" | "uploading" | "creating" | "success" | "error"
@@ -145,6 +147,7 @@ export default function Container({
 
   useEffect(() => {
     if (
+      !disableChainSwitchingRef.current &&
       selectedChainId !== chainId &&
       chains.some((chain) => chain.id === selectedChainId)
     ) {
@@ -165,6 +168,7 @@ export default function Container({
   });
 
   const onSubmit = async (data: CreatePageFormData) => {
+    disableChainSwitchingRef.current = true;
     const formData = new FormData();
 
     // Append form fields to FormData
@@ -225,10 +229,10 @@ export default function Container({
       console.error("Error creating page:", error);
       setCreationStatus("error");
       setPendingTxHash(null);
+      disableChainSwitchingRef.current = false;
       return;
       // Handle error (e.g., show error message to user)
     }
-    setCreationStatus("idle");
   };
 
   const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {

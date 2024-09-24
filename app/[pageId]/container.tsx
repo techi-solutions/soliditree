@@ -22,7 +22,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { ContractPage, ContractPageColors } from "@/services/contractPages";
 import { useAccount } from "wagmi";
 import {
+  ArrowLeftCircleIcon,
   CheckIcon,
+  ClipboardIcon,
   ExternalLinkIcon,
   EyeIcon,
   GitPullRequestCreateArrow,
@@ -69,6 +71,7 @@ import { formatEther } from "viem";
 import debounce from "debounce";
 import { Badge } from "@/components/ui/badge";
 import { extractFunctionNameFromId } from "@/utils/functions";
+import { ClipboardService } from "@/services/clipboard";
 
 export default function Container({
   pageId,
@@ -89,6 +92,9 @@ export default function Container({
   destroyPage: (page: ContractPage) => Promise<void>;
   shortNameThreshold: number;
 }) {
+  const clipboard = useRef(new ClipboardService(pageId)).current;
+  const [clipboardItems, setClipboardItems] = useState<ClipboardItem[]>([]);
+
   const { address } = useAccount();
   const isOwner = address === owner;
   const isContractOwner = address === contractOwner;
@@ -156,8 +162,9 @@ export default function Container({
         functionName,
         formattedArgs,
         [{ ...func, name: functionName }],
-        () => {
+        (txHash: string) => {
           setTxStatus("creating");
+          setTxHash(txHash);
         },
         func.stateMutability === "payable"
           ? functionArgs[func.id]?.value || "0"
@@ -168,10 +175,10 @@ export default function Container({
       }
 
       setTxStatus("success");
-      setTxHash(receipt.transactionHash);
     } catch (error) {
       console.error(error);
       setTxStatus("error");
+      setTxHash(null);
     }
   };
 
@@ -193,6 +200,19 @@ export default function Container({
         [{ ...func, name: functionName }]
       );
       setTxStatus("success");
+
+      if (func.outputs.length === 1) {
+        clipboard.addItem({
+          type: func.outputs[0].type,
+          name: functionName,
+          value: result,
+        });
+
+        const items = clipboard.getItems();
+
+        setClipboardItems(items as unknown as ClipboardItem[]);
+      }
+
       setTimeout(() => {
         setResult(result);
       }, 100);
@@ -454,6 +474,10 @@ export default function Container({
     reserveName.length > 0 &&
     shortNameThreshold !== null &&
     reserveName.length <= shortNameThreshold;
+
+  const isEmptyResult = result === null || result === undefined;
+
+  console.log("clipboardItems", clipboardItems);
 
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
@@ -917,32 +941,87 @@ export default function Container({
                       )}
                       {func.inputs
                         .filter((input) => input.name !== undefined)
-                        .map((input) => (
-                          <div key={input.name} className="mt-2">
-                            <Label
-                              htmlFor={`${func.id}-${input.name}`}
-                              className="text-white"
-                            >
-                              {input.name}
-                            </Label>
-                            <Input
-                              id={`${func.id}-${input.name}`}
-                              type="text"
-                              autoFocus={index === 0}
-                              className="text-white"
-                              placeholder={input.type}
-                              value={functionArgs[func.id]?.[input.name!] || ""}
-                              onChange={(e) =>
-                                func.id &&
-                                handleArgChange(
-                                  func.id,
-                                  input.name!,
-                                  e.target.value
-                                )
-                              }
-                            />
-                          </div>
-                        ))}
+                        .map((input) => {
+                          const filteredItems = clipboard.getItemsForType(
+                            input.type
+                          );
+                          return (
+                            <div key={input.name} className="relative mt-2">
+                              <Label
+                                htmlFor={`${func.id}-${input.name}`}
+                                className="text-white"
+                              >
+                                {input.name}
+                              </Label>
+                              <Input
+                                id={`${func.id}-${input.name}`}
+                                type="text"
+                                autoFocus={index === 0}
+                                className="text-white"
+                                placeholder={input.type}
+                                value={
+                                  functionArgs[func.id]?.[input.name!] || ""
+                                }
+                                onChange={(e) =>
+                                  func.id &&
+                                  handleArgChange(
+                                    func.id,
+                                    input.name!,
+                                    e.target.value
+                                  )
+                                }
+                              />
+                              {filteredItems.length > 0 && (
+                                <Select
+                                  defaultValue={func.text?.style || "normal"}
+                                  onValueChange={(value) => {
+                                    handleArgChange(
+                                      func.id,
+                                      input.name!,
+                                      value
+                                    );
+                                  }}
+                                >
+                                  <SelectTrigger className="absolute h-6 w-10 p-0 pl-1 bottom-1.5 right-1.5 cursor-pointer">
+                                    <SelectValue>
+                                      <ClipboardIcon className="h-4 w-4 mr-2" />
+                                    </SelectValue>
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {filteredItems.map((item) => (
+                                      <SelectItem
+                                        key={`${item.value}`}
+                                        value={`${item.value}`}
+                                      >
+                                        {`[${item.name}]`} {`${item.value}`}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              )}
+                              {address && input.type === "address" && (
+                                <Badge
+                                  onClick={() =>
+                                    handleArgChange(
+                                      func.id,
+                                      input.name!,
+                                      address
+                                    )
+                                  }
+                                  className={cn(
+                                    "absolute bottom-1.5 cursor-pointer",
+                                    filteredItems.length > 0
+                                      ? "right-14"
+                                      : "right-1.5"
+                                  )}
+                                >
+                                  <ArrowLeftCircleIcon className="h-4 w-4 mr-2" />{" "}
+                                  my address
+                                </Badge>
+                              )}
+                            </div>
+                          );
+                        })}
                     </div>
                     <div className="flex flex-col gap-2 justify-center max-w-xl w-full">
                       {txStatus === "idle" || txStatus === "error" ? (
@@ -959,7 +1038,7 @@ export default function Container({
                         </>
                       ) : (
                         <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
-                          {!!result && (
+                          {!isEmptyResult && (
                             <div className="max-w-xl w-full flex flex-col items-center justify-center gap-2 animate-fade-in overflow-x-hidden">
                               <Label className="text-white">Result</Label>
                               <p className="text-black break-words whitespace-normal overflow-y-auto w-full p-2 bg-white rounded-md">
@@ -993,7 +1072,7 @@ export default function Container({
                               </Button>
                             </Link>
                           )}
-                          {!result && !txHash && (
+                          {isEmptyResult && !txHash && (
                             <>
                               <p className="text-sm text-muted-foreground">
                                 {txStatus === "approval"

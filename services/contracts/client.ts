@@ -16,7 +16,7 @@ export const ContractWriteFunction = async (
   functionName: string,
   args: unknown[],
   abi: AbiItem[],
-  onCreate: () => void,
+  onCreate: (txHash: string) => void,
   value?: string
 ) => {
   const valueBigInt = value ? parseEther(value) : undefined;
@@ -31,7 +31,7 @@ export const ContractWriteFunction = async (
 
   const result = await writeContract(wagmiConfig, request);
 
-  onCreate();
+  onCreate(result);
 
   const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,

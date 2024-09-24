@@ -61,10 +61,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       title,
       description,
       icons: {
-        icon: [
-          { url: iconUrl, sizes: "any" },
-          { url: "/assets/icon.svg", type: "image/svg+xml" },
-        ],
+        icon: iconUrl,
         apple: pageLogoUrl,
       },
       themeColor,

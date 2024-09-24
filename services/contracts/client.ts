@@ -6,7 +6,7 @@ import {
   waitForTransactionReceipt,
   writeContract,
 } from "@wagmi/core";
-import { networks, wagmiAdapter } from "../walletConnect/config";
+import { wagmiConfig } from "../walletConnect/config";
 import { AbiItem, parseEther } from "viem";
 import { Network } from "@/constants/networks";
 
@@ -19,31 +19,24 @@ export const ContractWriteFunction = async (
   onCreate: () => void,
   value?: string
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === network.chainId);
-  if (!caipNetwork) {
-    return;
-  }
-
   const valueBigInt = value ? parseEther(value) : undefined;
-
-  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
-  const { request } = await simulateContract(wagmiAdapter.wagmiConfig, {
+  const { request } = await simulateContract(wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi,
     functionName,
     args,
     value: valueBigInt,
+    chainId: network.chainId,
   });
 
-  const result = await writeContract(wagmiAdapter.wagmiConfig, request);
-  console.log("result", result);
+  const result = await writeContract(wagmiConfig, request);
 
   onCreate();
 
-  const receipt = await waitForTransactionReceipt(wagmiAdapter.wagmiConfig, {
+  const receipt = await waitForTransactionReceipt(wagmiConfig, {
     hash: result,
   });
-  console.log("receipt", receipt);
+
   if (receipt.status !== "success") {
     throw new Error("Transaction failed");
   }
@@ -58,18 +51,13 @@ export const ContractReadFunction = async (
   args: unknown[],
   abi: AbiItem[]
 ) => {
-  const caipNetwork = networks.find((n) => n.chainId === network.chainId);
-  if (!caipNetwork) {
-    return;
-  }
-
-  await wagmiAdapter.networkControllerClient?.switchCaipNetwork(caipNetwork);
-  const result = await readContract(wagmiAdapter.wagmiConfig, {
+  const result = await readContract(wagmiConfig, {
     address: contractAddress as `0x${string}`,
     abi,
     functionName,
     args,
+    chainId: network.chainId,
   });
-  console.log("result", result);
+
   return result as unknown;
 };

@@ -1,8 +1,8 @@
 // config/index.tsx
 
-import { WagmiAdapter } from "@reown/appkit-adapter-wagmi";
+import { defaultWagmiConfig } from "@web3modal/wagmi";
 
-import { createStorage } from "wagmi";
+import { cookieStorage, createStorage } from "wagmi";
 import {
   base as baseWagmi,
   polygon as polygonWagmi,
@@ -12,8 +12,7 @@ import {
 } from "wagmi/chains";
 import { base, polygon, gnosis, celo, arbitrum } from "@reown/appkit/networks";
 import { NETWORKS } from "@/constants/networks";
-import { Chain, defineChain, http } from "viem";
-import { localWagmiStorage } from "./local";
+import { defineChain, http } from "viem";
 
 // Your WalletConnect Cloud project ID
 export const projectId = process.env.NEXT_PUBLIC_WALLET_CONNECT_PROJECT_ID;
@@ -77,11 +76,19 @@ export const chains = [
       },
     },
   }),
-] as readonly [Chain, ...Chain[]];
+] as const;
 
-export const wagmiAdapter = new WagmiAdapter({
+// Create a metadata object
+const metadata = {
+  name: "Soliditree",
+  description: "An interface for your smart contracts",
+  url: "https://soliditree.xyz", // origin must match your domain & subdomain
+  icons: ["https://soliditree.xyz/favicon.ico"],
+};
+
+export const wagmiConfig = defaultWagmiConfig({
   chains,
-  networks,
+  metadata,
   transports: {
     "8453": http(NETWORKS["8453"].rpcUrl),
     "137": http(NETWORKS["137"].rpcUrl),
@@ -92,7 +99,7 @@ export const wagmiAdapter = new WagmiAdapter({
   projectId,
   ssr: true,
   storage: createStorage({
-    storage: localWagmiStorage,
+    storage: cookieStorage,
   }),
   //   ...wagmiOptions, // Optional - Override createConfig parameters
 });

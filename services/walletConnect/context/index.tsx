@@ -1,15 +1,10 @@
 "use client";
 
-import {
-  wagmiAdapter,
-  projectId,
-  networks,
-} from "@/services/walletConnect/config";
+import { wagmiConfig, projectId } from "@/services/walletConnect/config";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { createAppKit } from "@reown/appkit/react";
+import { createWeb3Modal } from "@web3modal/wagmi/react";
 import React, { type ReactNode } from "react";
-import { WagmiProvider, type Config } from "wagmi";
-import { localWagmiToInitialState } from "../config/local";
+import { cookieToInitialState, WagmiProvider, type Config } from "wagmi";
 
 // Set up queryClient
 const queryClient = new QueryClient();
@@ -18,26 +13,13 @@ if (!projectId) {
   throw new Error("Project ID is not defined");
 }
 
-// Create a metadata object
-const metadata = {
-  name: "Soliditree",
-  description: "An interface for your smart contracts",
-  url: "https://soliditree.xyz", // origin must match your domain & subdomain
-  icons: ["https://soliditree.xyz/favicon.ico"],
-};
-
 // Create the modal
-createAppKit({
-  adapters: [wagmiAdapter],
+createWeb3Modal({
+  wagmiConfig: wagmiConfig,
   projectId,
-  networks,
-  defaultNetwork: networks[0],
-  metadata: metadata,
-  features: {
-    analytics: false,
-    swaps: false,
-    onramp: false,
-  },
+  enableSwaps: false,
+  enableAnalytics: false,
+  enableOnramp: false,
   themeMode: "light",
   themeVariables: {
     "--w3m-accent": "#489587",
@@ -46,16 +28,18 @@ createAppKit({
   },
 });
 
-function ContextProvider({ children }: { children: ReactNode }) {
-  const initialState = localWagmiToInitialState(
-    wagmiAdapter.wagmiConfig as Config
-  );
+function ContextProvider({
+  children,
+  cookies,
+}: {
+  children: ReactNode;
+  cookies: string | null;
+}) {
+  const initialState = cookieToInitialState(wagmiConfig as Config, cookies);
+  console.log("initialState", initialState);
 
   return (
-    <WagmiProvider
-      config={wagmiAdapter.wagmiConfig as Config}
-      initialState={initialState}
-    >
+    <WagmiProvider config={wagmiConfig} initialState={initialState}>
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     </WagmiProvider>
   );

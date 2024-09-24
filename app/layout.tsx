@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import ContextProvider from "@/services/walletConnect/context";
+import { headers } from "next/headers";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -32,12 +33,13 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const cookies = headers().get("cookie");
   return (
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gradient-to-br from-teal-700 via-emerald-600 to-green-500`}
       >
-        <ContextProvider>{children}</ContextProvider>
+        <ContextProvider cookies={cookies}>{children}</ContextProvider>
         <Analytics />
       </body>
     </html>

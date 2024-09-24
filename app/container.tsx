@@ -10,6 +10,7 @@ import { useState } from "react";
 import { useDebounce } from "use-debounce";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { cn } from "@/lib/utils";
 
 export default function LandingPageContainer() {
   const router = useRouter();
@@ -54,13 +55,19 @@ export default function LandingPageContainer() {
           contracts with just a few clicks. No coding required.
         </p>
         <div className="animate-fade-in-slow flex items-center justify-center w-full font-color-white">
-          <w3m-button
-            disabled={!!address}
-            balance="hide"
-            size="md"
-            label="Sign in 🚀"
-            loadingLabel="Signing in ⏳"
-          />
+          <div
+            className={cn(
+              "rounded-full overflow-hidden",
+              address ? "bg-white py-1" : "bg-white p-1"
+            )}
+          >
+            <w3m-button
+              balance="hide"
+              size="md"
+              label="Sign in 🚀"
+              loadingLabel="Signing in ⏳"
+            />
+          </div>
           {address && (
             <Button
               className="animate-fade-in w-10 h-10 p-0 rounded-full ml-2"

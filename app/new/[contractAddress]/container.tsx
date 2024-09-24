@@ -239,7 +239,7 @@ export default function Container({
     const url = iconObjectUrl;
 
     const file = event.target.files?.[0];
-    if (file && file.type === "image/svg+xml") {
+    if (file) {
       setIconObjectUrl(URL.createObjectURL(file));
     } else {
       if (fileInputRef.current) {
@@ -524,25 +524,35 @@ export default function Container({
           </div>
 
           <div>
-            <Label htmlFor="icon">Icon (SVG only) (optional)</Label>
+            <Label htmlFor="icon">Icon (optional)</Label>
             <div className="relative">
               <Input
                 id="icon"
                 type="file"
-                accept=".svg"
+                accept=".png,.jpg,.jpeg"
                 ref={fileInputRef}
                 onChange={handleFileChange}
                 className="pl-8 text-input file:mr-4 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 file:cursor-pointer"
                 style={{ paddingTop: 5 }}
               />
-              <div className="absolute" style={{ top: 2, left: 2 }}>
+              <div
+                className="absolute flex items-center justify-center overflow-hidden rounded-sm"
+                style={{
+                  top: 4,
+                  left: 4,
+                  width: 28,
+                  height: 28,
+                }}
+              >
                 {iconObjectUrl ? (
                   <Image
                     src={iconObjectUrl}
                     alt="Icon"
-                    width={24}
-                    height={24}
-                    className="ml-1"
+                    width={28}
+                    height={28}
+                    objectFit="cover"
+                    objectPosition="center"
+                    className="h-full w-full overflow-hidden object-cover object-center"
                   />
                 ) : (
                   <ImageIcon className="h-8 w-8 text-muted-foreground" />

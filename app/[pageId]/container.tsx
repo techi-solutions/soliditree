@@ -775,8 +775,8 @@ export default function Container({
 
       <Card
         className={cn(
-          "max-w-xl mx-auto w-full border-transparent mb-10",
-          isOwner ? "m-10" : "m-2"
+          "max-w-xl mx-auto w-full border-transparent",
+          isOwner ? "m-10" : "m-2 mb-10"
         )}
         style={{
           backgroundColor: contractData.backgroundImage

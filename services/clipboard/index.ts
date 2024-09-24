@@ -10,9 +10,11 @@ export class ClipboardService {
   pageId: string;
   items: ClipboardItem[] = [];
 
+  store = typeof window === "undefined" ? mockLocalStorage : localStorage;
+
   constructor(pageId: string) {
     this.pageId = pageId;
-    const fromStorage = localStorage.getItem(`clipboard-${pageId}`);
+    const fromStorage = this.store.getItem(`clipboard-${pageId}`);
     if (fromStorage) {
       const parsedValues = JSON.parse(fromStorage);
       this.items = parsedValues.map((item: ClipboardItem) =>
@@ -39,7 +41,7 @@ export class ClipboardService {
       this.items.shift();
     }
 
-    localStorage.setItem(
+    this.store.setItem(
       `clipboard-${this.pageId}`,
       JSON.stringify(
         this.items.map((item) =>
@@ -59,3 +61,12 @@ export class ClipboardService {
     return this.items;
   }
 }
+
+const mockLocalStorage = {
+  getItem: () => {
+    return null;
+  },
+  setItem: () => {
+    return;
+  },
+};

@@ -25,6 +25,7 @@ import {
   ArrowLeftCircleIcon,
   CheckIcon,
   ClipboardIcon,
+  CopyIcon,
   ExternalLinkIcon,
   EyeIcon,
   GitPullRequestCreateArrow,
@@ -71,7 +72,7 @@ import { formatEther } from "viem";
 import debounce from "debounce";
 import { Badge } from "@/components/ui/badge";
 import { extractFunctionNameFromId } from "@/utils/functions";
-import { ClipboardService } from "@/services/clipboard";
+import { ClipboardItem, ClipboardService } from "@/services/clipboard";
 
 export default function Container({
   pageId,
@@ -132,11 +133,18 @@ export default function Container({
 
   const [donateValue, setDonateValue] = useState<string>("0");
 
+  const [resultCopied, setResultCopied] = useState<{ [key: string]: boolean }>(
+    {}
+  );
+
   const [txHash, setTxHash] = useState<string | null>(null);
   const [result, setResult] = useState<unknown | null>(null);
 
   const [functionArgs, setFunctionArgs] = useState<{
     [key: string]: { [key: string]: string };
+  }>({});
+  const [functionNoArgResults, setFunctionNoArgResults] = useState<{
+    [key: string]: string;
   }>({});
 
   const handleArgChange = (funcId: string, argName: string, value: string) => {
@@ -182,7 +190,10 @@ export default function Container({
     }
   };
 
-  const handleSubmitReadableTx = async (func: ExtendedAbiItem) => {
+  const handleSubmitReadableTx = async (
+    func: ExtendedAbiItem,
+    noArgResult: boolean = false
+  ) => {
     try {
       setTxStatus("requesting");
 
@@ -210,11 +221,25 @@ export default function Container({
 
         const items = clipboard.getItems();
 
-        setClipboardItems(items as unknown as ClipboardItem[]);
+        setClipboardItems(items);
       }
 
       setTimeout(() => {
-        setResult(result);
+        if (result === null || result === undefined) {
+          setResult(null);
+          setTxStatus("idle");
+          return;
+        }
+
+        if (noArgResult) {
+          setFunctionNoArgResults((prev) => ({
+            ...prev,
+            [func.id]: `${result}`,
+          }));
+          setTxStatus("idle");
+        } else {
+          setResult(result);
+        }
       }, 100);
     } catch (error) {
       console.error(error);
@@ -242,9 +267,10 @@ export default function Container({
   };
 
   const handleOpen = (func: ExtendedAbiItem) => {
-    setIsSheetOpen({ [func.id]: true });
     if (func.stateMutability === "view" && func.inputs.length === 0) {
-      handleSubmitReadableTx(func);
+      handleSubmitReadableTx(func, true);
+    } else {
+      setIsSheetOpen({ [func.id]: true });
     }
   };
 
@@ -254,7 +280,6 @@ export default function Container({
   };
 
   const handleClose = (nextState: boolean) => {
-    console.log("nextState", nextState);
     setIsSheetOpen({});
     if (nextState) {
       return;
@@ -338,14 +363,13 @@ export default function Container({
     duration: string,
     available: boolean
   ) => {
-    console.log("calculateCost", name, duration, available);
     if (name && !isCheckingName && available) {
       try {
         const cost = await ContractPagesCalculateReservationCost(
           parseInt(duration),
           name
         );
-        console.log("cost", cost);
+
         setNameCost(formatEther(cost));
       } catch (error) {
         console.error("Error calculating reservation cost:", error);
@@ -357,11 +381,10 @@ export default function Container({
   };
 
   const checkNameAvailability = async (name: string, duration: string) => {
-    console.log("checkNameAvailability", name, duration);
     if (name) {
       try {
         const isReserved = await ContractPagesGetReservedName(name);
-        console.log("isReserved", isReserved);
+
         setIsNameAvailable(!isReserved);
 
         if (!isReserved) {
@@ -388,7 +411,6 @@ export default function Container({
   ).current;
 
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    console.log("handleNameChange", e.target.value);
     if (!isCheckingName) {
       setIsCheckingName(true);
     }
@@ -470,14 +492,18 @@ export default function Container({
     }
   };
 
+  const handleCopy = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setResultCopied({ [id]: true });
+    setTimeout(() => setResultCopied({}), 1000);
+  };
+
   const isPremium =
     reserveName.length > 0 &&
     shortNameThreshold !== null &&
     reserveName.length <= shortNameThreshold;
 
   const isEmptyResult = result === null || result === undefined;
-
-  console.log("clipboardItems", clipboardItems);
 
   return (
     <div className="relative w-full flex justify-center items-start min-h-screen sm:p-4 sm:items-center">
@@ -885,10 +911,242 @@ export default function Container({
 
             return (
               <div key={func.id} className="mb-4">
-                <Sheet onOpenChange={handleClose} open={isSheetOpen[func.id]}>
-                  <SheetTrigger asChild>
+                {func.inputs.length > 0 ? (
+                  <Sheet onOpenChange={handleClose} open={isSheetOpen[func.id]}>
+                    <SheetTrigger asChild>
+                      <div className="w-full mb-2 space-y-2">
+                        <Button
+                          className="w-full flex justify-between items-center"
+                          style={{
+                            backgroundColor: colors.button,
+                            color: colors.buttonText,
+                          }}
+                          disabled={isClient && writeable && !address}
+                          onClick={() => handleOpen(func)}
+                        >
+                          <span>{func.name}</span>
+                          {writeable ? (
+                            <GitPullRequestCreateArrow className="h-4 w-4 ml-2" />
+                          ) : (
+                            <EyeIcon className="h-4 w-4 ml-2" />
+                          )}
+                        </Button>
+                      </div>
+                    </SheetTrigger>
+                    <SheetContent
+                      side={isPortrait ? "top" : "bottom"}
+                      className="flex flex-col items-center text-white"
+                    >
+                      <SheetHeader className="max-w-xl w-full justify-center">
+                        <SheetTitle className="text-white text-center">
+                          {func.name}
+                        </SheetTitle>
+                        <SheetDescription className="text-center">
+                          {func.id}
+                        </SheetDescription>
+                      </SheetHeader>
+                      <div className="p-4 max-w-xl w-full">
+                        {func.stateMutability === "payable" && (
+                          <div className="mt-2">
+                            <Label
+                              htmlFor={`${func.id}-value`}
+                              className="text-white"
+                            >
+                              Value (in {network.symbol})
+                            </Label>
+                            <Input
+                              id={`${func.id}-value`}
+                              className="text-white"
+                              autoFocus={index === 0}
+                              type="number"
+                              step="0.000000000000000001"
+                              min="0"
+                              placeholder="0.0"
+                              value={functionArgs[func.id]?.value || ""}
+                              onChange={(e) =>
+                                func.id &&
+                                handleArgChange(
+                                  func.id,
+                                  "value",
+                                  e.target.value
+                                )
+                              }
+                            />
+                          </div>
+                        )}
+                        {func.inputs
+                          .filter((input) => input.name !== undefined)
+                          .map((input) => {
+                            const filteredItems = clipboardItems.filter(
+                              (item) => item.type === input.type
+                            );
+                            return (
+                              <div key={input.name} className="relative mt-2">
+                                <Label
+                                  htmlFor={`${func.id}-${input.name}`}
+                                  className="text-white"
+                                >
+                                  {input.name}
+                                </Label>
+                                <Input
+                                  id={`${func.id}-${input.name}`}
+                                  type="text"
+                                  autoFocus={index === 0}
+                                  className="text-white"
+                                  placeholder={input.type}
+                                  value={
+                                    functionArgs[func.id]?.[input.name!] || ""
+                                  }
+                                  onChange={(e) =>
+                                    func.id &&
+                                    handleArgChange(
+                                      func.id,
+                                      input.name!,
+                                      e.target.value
+                                    )
+                                  }
+                                />
+                                {filteredItems.length > 0 && (
+                                  <Select
+                                    defaultValue={func.text?.style || "normal"}
+                                    onValueChange={(value) => {
+                                      handleArgChange(
+                                        func.id,
+                                        input.name!,
+                                        value
+                                      );
+                                    }}
+                                  >
+                                    <SelectTrigger className="absolute h-6 w-10 p-0 pl-1 bottom-1.5 right-1.5 cursor-pointer bg-black">
+                                      <SelectValue>
+                                        <ClipboardIcon className="h-4 w-4 mr-2" />
+                                      </SelectValue>
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {filteredItems.map((item) => (
+                                        <SelectItem
+                                          key={`${item.value}`}
+                                          value={`${item.value}`}
+                                        >
+                                          {`[${item.name}]`} {`${item.value}`}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                {address && input.type === "address" && (
+                                  <Badge
+                                    onClick={() =>
+                                      handleArgChange(
+                                        func.id,
+                                        input.name!,
+                                        address
+                                      )
+                                    }
+                                    className={cn(
+                                      "absolute bottom-1.5 cursor-pointer",
+                                      filteredItems.length > 0
+                                        ? "right-14"
+                                        : "right-1.5"
+                                    )}
+                                  >
+                                    <ArrowLeftCircleIcon className="h-4 w-4 mr-2" />{" "}
+                                    my address
+                                  </Badge>
+                                )}
+                              </div>
+                            );
+                          })}
+                      </div>
+                      <div className="flex flex-col gap-2 justify-center max-w-xl w-full">
+                        {txStatus === "idle" || txStatus === "error" ? (
+                          <>
+                            <Button
+                              onClick={() =>
+                                writeable
+                                  ? handleSubmitWriteableTx(func)
+                                  : handleSubmitReadableTx(func)
+                              }
+                            >
+                              {writeable ? "Send Transaction" : "Request Data"}
+                            </Button>
+                          </>
+                        ) : (
+                          <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
+                            {!isEmptyResult && (
+                              <div className="max-w-xl w-full flex flex-col items-center justify-center gap-2 animate-fade-in overflow-x-hidden">
+                                <Label className="text-white">Result</Label>
+                                <p className="text-black break-words whitespace-normal overflow-y-auto w-full p-2 bg-white rounded-md">
+                                  {`${result}`}
+                                </p>
+                                <Button
+                                  className="w-full"
+                                  onClick={() => {
+                                    handleRetry();
+                                    writeable
+                                      ? handleSubmitWriteableTx(func)
+                                      : handleSubmitReadableTx(func);
+                                  }}
+                                >
+                                  {writeable ? "Send Again" : "Request Again"}{" "}
+                                  {txStatus === "requesting" && (
+                                    <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                  )}
+                                </Button>
+                              </div>
+                            )}
+                            {!!txHash && (
+                              <Link
+                                className="animate-fade-in text-white"
+                                target="_blank"
+                                href={`${network.explorer}/tx/${txHash}`}
+                              >
+                                <Button className="w-full">
+                                  View on Explorer{" "}
+                                  <ExternalLinkIcon className="h-4 w-4 ml-2" />
+                                </Button>
+                              </Link>
+                            )}
+                            {isEmptyResult && !txHash && (
+                              <>
+                                <p className="text-sm text-muted-foreground">
+                                  {txStatus === "approval"
+                                    ? "Requesting to sign transaction 🔑"
+                                    : txStatus === "creating"
+                                    ? "Submitted 🚀"
+                                    : txStatus === "success"
+                                    ? "Successful 🎉"
+                                    : txStatus === "requesting"
+                                    ? "Requesting data 🔍"
+                                    : "Failed ❌"}
+                                </p>
+                                <div className="w-full flex items-center justify-center">
+                                  <Progress
+                                    className="text-white"
+                                    value={
+                                      txStatus === "approval" ||
+                                      txStatus === "requesting"
+                                        ? 33
+                                        : txStatus === "creating"
+                                        ? 66
+                                        : txStatus === "success"
+                                        ? 100
+                                        : 0
+                                    }
+                                  />
+                                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
+                                </div>
+                              </>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </SheetContent>
+                  </Sheet>
+                ) : (
+                  <div className="w-full mb-2 space-y-2">
                     <Button
-                      className="w-full mb-2 flex justify-between items-center"
+                      className="w-full flex justify-between items-center"
                       style={{
                         backgroundColor: colors.button,
                         color: colors.buttonText,
@@ -897,219 +1155,35 @@ export default function Container({
                       onClick={() => handleOpen(func)}
                     >
                       <span>{func.name}</span>
-                      {writeable ? (
-                        <GitPullRequestCreateArrow className="h-4 w-4 ml-2" />
-                      ) : (
-                        <EyeIcon className="h-4 w-4 ml-2" />
-                      )}
+                      <EyeIcon className="h-4 w-4 ml-2" />
                     </Button>
-                  </SheetTrigger>
-                  <SheetContent
-                    side={isPortrait ? "top" : "bottom"}
-                    className="flex flex-col items-center text-white"
-                  >
-                    <SheetHeader className="max-w-xl w-full justify-center">
-                      <SheetTitle className="text-white text-center">
-                        {func.name}
-                      </SheetTitle>
-                      <SheetDescription className="text-center">
-                        {func.id}
-                      </SheetDescription>
-                    </SheetHeader>
-                    <div className="p-4 max-w-xl w-full">
-                      {func.stateMutability === "payable" && (
-                        <div className="mt-2">
-                          <Label
-                            htmlFor={`${func.id}-value`}
-                            className="text-white"
-                          >
-                            Value (in {network.symbol})
-                          </Label>
-                          <Input
-                            id={`${func.id}-value`}
-                            className="text-white"
-                            autoFocus={index === 0}
-                            type="number"
-                            step="0.000000000000000001"
-                            min="0"
-                            placeholder="0.0"
-                            value={functionArgs[func.id]?.value || ""}
-                            onChange={(e) =>
-                              func.id &&
-                              handleArgChange(func.id, "value", e.target.value)
-                            }
-                          />
-                        </div>
-                      )}
-                      {func.inputs
-                        .filter((input) => input.name !== undefined)
-                        .map((input) => {
-                          const filteredItems = clipboard.getItemsForType(
-                            input.type
-                          );
-                          return (
-                            <div key={input.name} className="relative mt-2">
-                              <Label
-                                htmlFor={`${func.id}-${input.name}`}
-                                className="text-white"
-                              >
-                                {input.name}
-                              </Label>
-                              <Input
-                                id={`${func.id}-${input.name}`}
-                                type="text"
-                                autoFocus={index === 0}
-                                className="text-white"
-                                placeholder={input.type}
-                                value={
-                                  functionArgs[func.id]?.[input.name!] || ""
-                                }
-                                onChange={(e) =>
-                                  func.id &&
-                                  handleArgChange(
-                                    func.id,
-                                    input.name!,
-                                    e.target.value
-                                  )
-                                }
-                              />
-                              {filteredItems.length > 0 && (
-                                <Select
-                                  defaultValue={func.text?.style || "normal"}
-                                  onValueChange={(value) => {
-                                    handleArgChange(
-                                      func.id,
-                                      input.name!,
-                                      value
-                                    );
-                                  }}
-                                >
-                                  <SelectTrigger className="absolute h-6 w-10 p-0 pl-1 bottom-1.5 right-1.5 cursor-pointer bg-black">
-                                    <SelectValue>
-                                      <ClipboardIcon className="h-4 w-4 mr-2" />
-                                    </SelectValue>
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {filteredItems.map((item) => (
-                                      <SelectItem
-                                        key={`${item.value}`}
-                                        value={`${item.value}`}
-                                      >
-                                        {`[${item.name}]`} {`${item.value}`}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              )}
-                              {address && input.type === "address" && (
-                                <Badge
-                                  onClick={() =>
-                                    handleArgChange(
-                                      func.id,
-                                      input.name!,
-                                      address
-                                    )
-                                  }
-                                  className={cn(
-                                    "absolute bottom-1.5 cursor-pointer",
-                                    filteredItems.length > 0
-                                      ? "right-14"
-                                      : "right-1.5"
-                                  )}
-                                >
-                                  <ArrowLeftCircleIcon className="h-4 w-4 mr-2" />{" "}
-                                  my address
-                                </Badge>
-                              )}
-                            </div>
-                          );
-                        })}
-                    </div>
-                    <div className="flex flex-col gap-2 justify-center max-w-xl w-full">
-                      {txStatus === "idle" || txStatus === "error" ? (
-                        <>
+                    {functionNoArgResults[func.id] !== undefined &&
+                      functionNoArgResults[func.id] !== null && (
+                        <div className="relative">
+                          <p className="text-white text-sm bg-black py-2 px-4 rounded-md break-words">
+                            {functionNoArgResults[func.id]}
+                          </p>
                           <Button
-                            onClick={() =>
-                              writeable
-                                ? handleSubmitWriteableTx(func)
-                                : handleSubmitReadableTx(func)
-                            }
+                            variant="ghost"
+                            size="sm"
+                            className="absolute top-1.5 right-1.5 h-6 w-6 p-0 bg-black"
+                            onClick={() => {
+                              handleCopy(
+                                func.id,
+                                functionNoArgResults[func.id]
+                              );
+                            }}
                           >
-                            {writeable ? "Send Transaction" : "Request Data"}
+                            {resultCopied[func.id] ? (
+                              <CheckIcon className="h-4 w-4 text-white" />
+                            ) : (
+                              <CopyIcon className="h-4 w-4 text-white" />
+                            )}
                           </Button>
-                        </>
-                      ) : (
-                        <div className="min-h-20 max-w-xl w-full flex flex-col items-center justify-center">
-                          {!isEmptyResult && (
-                            <div className="max-w-xl w-full flex flex-col items-center justify-center gap-2 animate-fade-in overflow-x-hidden">
-                              <Label className="text-white">Result</Label>
-                              <p className="text-black break-words whitespace-normal overflow-y-auto w-full p-2 bg-white rounded-md">
-                                {`${result}`}
-                              </p>
-                              <Button
-                                className="w-full"
-                                onClick={() => {
-                                  handleRetry();
-                                  writeable
-                                    ? handleSubmitWriteableTx(func)
-                                    : handleSubmitReadableTx(func);
-                                }}
-                              >
-                                {writeable ? "Send Again" : "Request Again"}{" "}
-                                {txStatus === "requesting" && (
-                                  <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                                )}
-                              </Button>
-                            </div>
-                          )}
-                          {!!txHash && (
-                            <Link
-                              className="animate-fade-in text-white"
-                              target="_blank"
-                              href={`${network.explorer}/tx/${txHash}`}
-                            >
-                              <Button className="w-full">
-                                View on Explorer{" "}
-                                <ExternalLinkIcon className="h-4 w-4 ml-2" />
-                              </Button>
-                            </Link>
-                          )}
-                          {isEmptyResult && !txHash && (
-                            <>
-                              <p className="text-sm text-muted-foreground">
-                                {txStatus === "approval"
-                                  ? "Requesting to sign transaction 🔑"
-                                  : txStatus === "creating"
-                                  ? "Submitted 🚀"
-                                  : txStatus === "success"
-                                  ? "Successful 🎉"
-                                  : txStatus === "requesting"
-                                  ? "Requesting data 🔍"
-                                  : "Failed ❌"}
-                              </p>
-                              <div className="w-full flex items-center justify-center">
-                                <Progress
-                                  className="text-white"
-                                  value={
-                                    txStatus === "approval" ||
-                                    txStatus === "requesting"
-                                      ? 33
-                                      : txStatus === "creating"
-                                      ? 66
-                                      : txStatus === "success"
-                                      ? 100
-                                      : 0
-                                  }
-                                />
-                                <Loader2 className="ml-2 h-4 w-4 animate-spin" />
-                              </div>
-                            </>
-                          )}
                         </div>
                       )}
-                    </div>
-                  </SheetContent>
-                </Sheet>
+                  </div>
+                )}
               </div>
             );
           })}

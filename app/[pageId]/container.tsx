@@ -982,7 +982,7 @@ export default function Container({
                                     );
                                   }}
                                 >
-                                  <SelectTrigger className="absolute h-6 w-10 p-0 pl-1 bottom-1.5 right-1.5 cursor-pointer">
+                                  <SelectTrigger className="absolute h-6 w-10 p-0 pl-1 bottom-1.5 right-1.5 cursor-pointer bg-black">
                                     <SelectValue>
                                       <ClipboardIcon className="h-4 w-4 mr-2" />
                                     </SelectValue>

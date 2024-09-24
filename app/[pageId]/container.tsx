@@ -775,7 +775,7 @@ export default function Container({
 
       <Card
         className={cn(
-          "max-w-xl mx-auto w-full border-transparent",
+          "max-w-xl mx-auto w-full border-transparent mb-10",
           isOwner ? "m-10" : "m-2"
         )}
         style={{

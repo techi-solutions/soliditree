@@ -707,7 +707,7 @@ export default function Container({
           </div>
 
           <div className="z-50 fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
-            <div className="flex items-center justify-between container mx-auto max-w-2xl">
+            <div className="flex flex-col items-center justify-between container mx-auto max-w-2xl">
               {(creationStatus === "idle" || creationStatus === "error") && (
                 <Button
                   type="submit"

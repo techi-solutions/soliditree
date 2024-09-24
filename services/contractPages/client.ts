@@ -256,6 +256,39 @@ export const ContractPagesGetReservedName = async (
   return isReserved;
 };
 
+export const ContractPagesGetReservedNameId = async (
+  name: string
+): Promise<string | null> => {
+  const chainId = 8453;
+
+  const caipNetwork = networks.find((n) => n.chainId === chainId);
+  if (!caipNetwork) {
+    throw new Error("Network not found");
+  }
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const result = (await readContract(wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "getReservedName",
+    args: [name],
+    chainId: chainId,
+  })) as string;
+
+  if (
+    !result ||
+    result ===
+      "0x0000000000000000000000000000000000000000000000000000000000000000" ||
+    result === "0x"
+  ) {
+    return null;
+  }
+
+  return result;
+};
+
 export const ContractPagesCalculateReservationCost = async (
   months: number,
   name: string
@@ -300,4 +333,39 @@ export const ContractPagesShortNameThreshold = async (): Promise<number> => {
   })) as bigint;
 
   return Number(result);
+};
+
+export const ContractPagesReleaseName = async (
+  pageId: string,
+  onReleasing: (txHash: string) => void
+) => {
+  const chainId = 8453;
+
+  const caipNetwork = networks.find((n) => n.chainId === chainId);
+  if (!caipNetwork) {
+    throw new Error("Network not found");
+  }
+
+  const contractPagesAddress =
+    NETWORKS[caipNetwork.chainId].adminContractAddress;
+
+  const { request } = await simulateContract(wagmiConfig, {
+    address: contractPagesAddress as `0x${string}`,
+    abi: ContractPagesABI.abi,
+    functionName: "releaseName",
+    args: [pageId],
+  });
+
+  const result = await writeContract(wagmiConfig, request);
+
+  onReleasing(result);
+
+  const receipt = await waitForTransactionReceipt(wagmiConfig, {
+    hash: result,
+  });
+  if (receipt.status !== "success") {
+    throw new Error("Transaction failed");
+  }
+
+  return receipt;
 };

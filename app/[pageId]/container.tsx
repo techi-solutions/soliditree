@@ -53,6 +53,8 @@ import {
   ContractPagesReserveName,
   ContractPagesGetReservedName,
   ContractPagesCalculateReservationCost,
+  ContractPagesReleaseName,
+  ContractPagesGetReservedNameId,
 } from "@/services/contractPages/client";
 import { formatArg } from "@/utils/formatting";
 import { useRouter } from "next/navigation";
@@ -415,6 +417,34 @@ export default function Container({
     }
   };
 
+  const handleReleaseName = async () => {
+    try {
+      setTxHash(null);
+      setTxStatus("approval");
+
+      const reservedNameId = await ContractPagesGetReservedNameId(pageId);
+      if (!reservedNameId) {
+        throw new Error("Reserved name not found");
+      }
+
+      await ContractPagesReleaseName(pageId, (txHash: string) => {
+        setTxStatus("creating");
+        setTxHash(txHash);
+      });
+
+      setTxStatus("success");
+      setIsReserveNameSheetOpen(false);
+
+      router.push(`/${reservedNameId}`);
+    } catch (error) {
+      console.error("Error releasing name:", error);
+      setTxStatus("error");
+      setTimeout(() => {
+        setTxStatus("idle");
+      }, 2000);
+    }
+  };
+
   const isPremium =
     reserveName.length > 0 &&
     shortNameThreshold !== null &&
@@ -434,111 +464,156 @@ export default function Container({
       )}
       {isOwner && (
         <div className="fixed top-0 left-0 w-full flex justify-between items-center space-x-2 px-6 py-2 z-50">
-          <Sheet
-            open={isReserveNameSheetOpen}
-            onOpenChange={setIsReserveNameSheetOpen}
-          >
-            <SheetTrigger asChild>
-              <Button className="bg-white text-black">
-                {!usesReservedName ? (
-                  <>
-                    Reserve page name (ex: /usdc, /eth){" "}
-                    <StarIcon className="h-4 w-4 ml-2" />
-                  </>
-                ) : (
-                  <>
-                    Release page name{" "}
-                    <StarFilledIcon className="h-4 w-4 ml-2" />
-                  </>
-                )}
-              </Button>
-            </SheetTrigger>
-            <SheetContent
-              side={isPortrait ? "top" : "bottom"}
-              className="flex flex-col items-center text-white"
+          {!usesReservedName ? (
+            <Sheet
+              open={isReserveNameSheetOpen}
+              onOpenChange={setIsReserveNameSheetOpen}
             >
-              <SheetHeader>
-                <SheetTitle>Reserve Page Name</SheetTitle>
-                <SheetDescription>
-                  Enter a name and select duration to reserve
-                </SheetDescription>
-              </SheetHeader>
-              <div className="space-y-4 w-full max-w-md">
-                <div>
-                  <Label htmlFor="reserve-name">Name</Label>
-                  <div className="relative">
-                    <Input
-                      id="reserve-name"
-                      value={reserveName}
-                      onChange={handleNameChange}
-                      placeholder="Enter name"
-                      className="pl-6"
-                    />
-                    <p className="absolute left-3 top-1.5 text-muted-foreground">
-                      /
-                    </p>
-                    {isCheckingName && (
-                      <Loader2 className="absolute right-2 top-3 h-4 w-4 animate-spin" />
-                    )}
-                    {!isCheckingName && isPremium && (
-                      <Badge
-                        className="absolute right-2 top-2"
-                        variant="secondary"
-                      >
-                        premium
-                      </Badge>
+              <SheetTrigger asChild>
+                <Button className="bg-white text-black">
+                  Reserve page name (ex: /usdc, /eth){" "}
+                  <StarIcon className="h-4 w-4 ml-2" />
+                </Button>
+              </SheetTrigger>
+              <SheetContent
+                side={isPortrait ? "top" : "bottom"}
+                className="flex flex-col items-center text-white"
+              >
+                <SheetHeader>
+                  <SheetTitle>Reserve Page Name</SheetTitle>
+                  <SheetDescription>
+                    Enter a name and select duration to reserve
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="space-y-4 w-full max-w-md">
+                  <div>
+                    <Label htmlFor="reserve-name">Name</Label>
+                    <div className="relative">
+                      <Input
+                        id="reserve-name"
+                        value={reserveName}
+                        onChange={handleNameChange}
+                        placeholder="Enter name"
+                        className="pl-6"
+                      />
+                      <p className="absolute left-3 top-1.5 text-muted-foreground">
+                        /
+                      </p>
+                      {isCheckingName && (
+                        <Loader2 className="absolute right-2 top-3 h-4 w-4 animate-spin" />
+                      )}
+                      {!isCheckingName && isPremium && (
+                        <Badge
+                          className="absolute right-2 top-2"
+                          variant="secondary"
+                        >
+                          premium
+                        </Badge>
+                      )}
+                    </div>
+
+                    {isNameAvailable === false && !isCheckingName && (
+                      <p className="text-red-500">Name is already taken</p>
                     )}
                   </div>
-
-                  {isNameAvailable === false && !isCheckingName && (
-                    <p className="text-red-500">Name is already taken</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="reserve-duration">Duration</Label>
-                  <Select
-                    value={reserveDuration}
-                    onValueChange={handleDurationChange}
+                  <div>
+                    <Label htmlFor="reserve-duration">Duration</Label>
+                    <Select
+                      value={reserveDuration}
+                      onValueChange={handleDurationChange}
+                    >
+                      <SelectTrigger id="reserve-duration">
+                        <SelectValue placeholder="Select duration" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1 month</SelectItem>
+                        <SelectItem value="12">12 months</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    onClick={handleReserveName}
+                    disabled={
+                      txStatus !== "idle" || !isNameAvailable || isCheckingName
+                    }
                   >
-                    <SelectTrigger id="reserve-duration">
-                      <SelectValue placeholder="Select duration" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1 month</SelectItem>
-                      <SelectItem value="12">12 months</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Button
-                  onClick={handleReserveName}
-                  disabled={
-                    txStatus !== "idle" || !isNameAvailable || isCheckingName
-                  }
-                >
-                  {txStatus === "idle" ? (
-                    !!nameCost && !isContractOwner ? (
-                      `Reserve Name (${nameCost} ${network.symbol})`
+                    {txStatus === "idle" ? (
+                      !!nameCost && !isContractOwner ? (
+                        `Reserve Name (${nameCost} ${network.symbol})`
+                      ) : (
+                        "Reserve Name"
+                      )
                     ) : (
-                      "Reserve Name"
-                    )
-                  ) : (
-                    <>
-                      {txStatus === "approval"
-                        ? "Approve in wallet"
-                        : txStatus === "creating"
-                        ? "Reserving..."
-                        : txStatus === "success"
-                        ? "Reserved!"
-                        : txStatus === "insufficient funds"
-                        ? "Insufficient funds"
-                        : "Error"}
-                      <Loader2 className="h-4 w-4 ml-2 animate-spin" />
-                    </>
-                  )}
+                      <>
+                        {txStatus === "approval"
+                          ? "Approve in wallet"
+                          : txStatus === "creating"
+                          ? "Reserving..."
+                          : txStatus === "success"
+                          ? "Reserved!"
+                          : txStatus === "insufficient funds"
+                          ? "Insufficient funds"
+                          : "Error"}
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </SheetContent>
+            </Sheet>
+          ) : (
+            <Sheet>
+              <SheetTrigger asChild>
+                <Button className="bg-white text-black">
+                  Release page name <StarFilledIcon className="h-4 w-4 ml-2" />
                 </Button>
-              </div>
-            </SheetContent>
-          </Sheet>
+              </SheetTrigger>
+              <SheetContent
+                side={isPortrait ? "top" : "bottom"}
+                className="flex flex-col items-center text-white"
+              >
+                <SheetHeader>
+                  <SheetTitle>Release Page Name</SheetTitle>
+                  <SheetDescription>
+                    Are you sure you want to release the page name?
+                  </SheetDescription>
+                </SheetHeader>
+                <div className="flex flex-col space-y-4 w-full max-w-md">
+                  <Button
+                    onClick={handleReleaseName}
+                    disabled={txStatus !== "idle"}
+                  >
+                    {txStatus === "idle" ? (
+                      "Release Name"
+                    ) : (
+                      <>
+                        {txStatus === "approval"
+                          ? "Approve in wallet"
+                          : txStatus === "creating"
+                          ? "Releasing..."
+                          : txStatus === "success"
+                          ? "Released!"
+                          : "Error"}
+                        <Loader2 className="h-4 w-4 ml-2 animate-spin" />
+                      </>
+                    )}
+                  </Button>
+                  {!!txHash && (
+                    <Link
+                      className="animate-fade-in text-white"
+                      target="_blank"
+                      href={`${network.explorer}/tx/${txHash}`}
+                    >
+                      <Button className="w-full">
+                        View on Explorer{" "}
+                        <ExternalLinkIcon className="h-4 w-4 ml-2" />
+                      </Button>
+                    </Link>
+                  )}
+                </div>
+              </SheetContent>
+            </Sheet>
+          )}
           <div className="flex items-center space-x-2">
             <Button
               variant="destructive"

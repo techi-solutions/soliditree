@@ -698,7 +698,9 @@ export default function Container({
               ) : (
                 <HeartIcon className="h-4 w-4 ml-2 text-red-500 animate-pulse" />
               )}
-              <p>{!!txHash ? "Donation received! 🎉" : "Donate to the page"}</p>
+              <p>
+                {!!txHash ? "Donation received! 🎉" : "Donate to Soliditree"}
+              </p>
               <div className="flex flex-col gap-2 justify-center max-w-xl w-full space-y-2">
                 {txStatus === "idle" || txStatus === "error" ? (
                   <>

@@ -29,7 +29,7 @@ export default function LandingPageContainer() {
   };
 
   const handleCreatePage = () => {
-    router.push(`/new/${contractAddress}?chainId=${chainId}`);
+    router.push(`/contract/${contractAddress}?chainId=${chainId}`);
   };
 
   return (
@@ -98,7 +98,7 @@ export default function LandingPageContainer() {
                 value={contractAddress}
               />
               {debouncedValidContract && (
-                <Link href={`/new/${contractAddress}?chainId=${chainId}`}>
+                <Link href={`/contract/${contractAddress}?chainId=${chainId}`}>
                   <Button className="mt-4 animate-fade-in">
                     Start creating page{" "}
                     <ArrowRightIcon className="h-4 w-4 ml-2" />

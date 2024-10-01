@@ -5,7 +5,7 @@ import {
   http,
   PublicClient,
 } from "viem";
-import { gnosis } from "viem/chains";
+import { base } from "viem/chains";
 import ProxyContractABI from "@/abi/ERC1967Proxy.abi.json";
 
 export class ProxyContractService {
@@ -20,7 +20,7 @@ export class ProxyContractService {
   constructor(
     private readonly rpcUrl: string,
     private readonly contractAddress: string,
-    private readonly chain: Chain = gnosis
+    private readonly chain: Chain = base
   ) {
     this.client = createPublicClient({
       chain: this.chain,

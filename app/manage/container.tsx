@@ -84,7 +84,7 @@ export default function ManagePage() {
           value={contractAddress}
         />
         {debouncedValidContract && (
-          <Link href={`/new/${contractAddress}?chainId=${chainId}`}>
+          <Link href={`/contract/${contractAddress}?chainId=${chainId}`}>
             <Button className="mt-4 animate-fade-in">Create Page</Button>
           </Link>
         )}

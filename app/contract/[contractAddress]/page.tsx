@@ -12,19 +12,18 @@ export default async function NewContractPage({
   searchParams,
 }: {
   params: { contractAddress: string };
-  searchParams: { chainId: string };
+  searchParams: { chainId?: string };
 }) {
-  const chainId = Number(searchParams.chainId);
+  const chainId: number | undefined = searchParams.chainId
+    ? Number(searchParams.chainId)
+    : undefined;
 
-  const network = NETWORKS[chainId];
+  const network = chainId ? NETWORKS[chainId] : NETWORKS["8453"];
   if (!network) {
     return <div>Network not found</div>;
   }
 
-  const chain = CHAINS[chainId];
-  if (!chain) {
-    return <div>Chain not found</div>;
-  }
+  const chain = chainId ? CHAINS[chainId] : CHAINS["8453"];
 
   const apiKey = process.env[`${network.name.toUpperCase()}_ETHERSCAN_API_KEY`];
 

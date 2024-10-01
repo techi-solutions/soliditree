@@ -151,7 +151,7 @@ export default function Container({
       selectedChainId !== chainId &&
       chains.some((chain) => chain.id === selectedChainId)
     ) {
-      router.replace(`/new/${contractAddress}?chainId=${selectedChainId}`);
+      router.replace(`/contract/${contractAddress}?chainId=${selectedChainId}`);
     }
   }, [selectedChainId, chainId, router, contractAddress]);
 

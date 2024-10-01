@@ -1,4 +1,4 @@
-import { CreatePageFormData } from "@/app/new/[contractAddress]/container";
+import { CreatePageFormData } from "@/app/contract/[contractAddress]/container";
 import { useState } from "react";
 import { FieldErrors, UseFormRegister, UseFormSetValue } from "react-hook-form";
 import { Label } from "./ui/label";

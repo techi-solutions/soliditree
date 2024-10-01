@@ -4,6 +4,8 @@ import { ContractPage, ContractPagesService } from "@/services/contractPages";
 import IPFSService from "@/services/ipfs";
 import { Suspense } from "react";
 import Container from "./container";
+import { detectPageIdType } from "@/utils/pages";
+import { redirect } from "next/navigation";
 
 type Props = {
   params: { pageId: string };
@@ -110,8 +112,17 @@ export default async function Page({ params }: Props) {
     network.adminContractAddress
   );
 
+  const pageIdType = detectPageIdType(pageId);
+  if (pageIdType === "invalid") {
+    return <div>Invalid page id</div>;
+  }
+
+  if (pageIdType === "address") {
+    redirect(`/contract/${pageId}`);
+  }
+
   let resolvedPageId = pageId;
-  if (!pageId.startsWith("0x")) {
+  if (pageIdType === "reservedName") {
     resolvedPageId = await contractPages.getPageIdByReservedName(pageId);
   }
 

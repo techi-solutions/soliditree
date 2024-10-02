@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useAccount, useDisconnect } from "wagmi";
-import { ArrowRightIcon, LogOutIcon } from "lucide-react";
+import { LogOutIcon, SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { Separator } from "@/components/ui/separator";
 import { useState } from "react";
@@ -81,9 +81,7 @@ export default function LandingPageContainer() {
           <>
             <Separator className="my-8 animate-fade-in-slow bg-white" />
             <div className="mt-8 animate-fade-in-slow">
-              <h3 className="text-2xl font-bold mb-4">
-                Create a new contract page
-              </h3>
+              <h3 className="text-2xl font-bold mb-4">Search for a contract</h3>
               <Input
                 type="text"
                 placeholder="Enter contract address"
@@ -100,8 +98,7 @@ export default function LandingPageContainer() {
               {debouncedValidContract && (
                 <Link href={`/contract/${contractAddress}?chainId=${chainId}`}>
                   <Button className="mt-4 animate-fade-in">
-                    Start creating page{" "}
-                    <ArrowRightIcon className="h-4 w-4 ml-2" />
+                    Search <SearchIcon className="h-4 w-4 ml-2" />
                   </Button>
                 </Link>
               )}

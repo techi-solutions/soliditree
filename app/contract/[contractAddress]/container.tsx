@@ -146,6 +146,10 @@ export default function Container({
   });
 
   useEffect(() => {
+    setFunctions(abi ?? []);
+  }, [abi]);
+
+  useEffect(() => {
     if (
       !disableChainSwitchingRef.current &&
       selectedChainId !== chainId &&

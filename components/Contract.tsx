@@ -706,18 +706,7 @@ export default function Container({
           </div>
         </div>
       )}
-      {explore && !usesReservedName && (
-        <div className="z-50 fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
-          <div className="flex flex-col items-center justify-between container mx-auto max-w-2xl">
-            <Link href={`/contract/${pageId}/save?chainId=${network.chainId}`}>
-              <Button type="submit" className="w-full">
-                Customize Page <PaintbrushIcon className="h-4 w-4 ml-2" />
-              </Button>
-            </Link>
-          </div>
-        </div>
-      )}
-      <div className="fixed bottom-2 right-2 space-x-2 z-50">
+      <div className="fixed bottom-2 right-2 flex space-x-2 z-50">
         <Link
           href={`${network.explorer}/address/${contractData.contractAddress}`}
           target="_blank"
@@ -876,6 +865,14 @@ export default function Container({
                 {contractData.website}
                 <ExternalLinkIcon className="h-4 w-4 ml-2" />
               </div>
+            </Link>
+          )}
+
+          {explore && !usesReservedName && (
+            <Link href={`/contract/${pageId}/save?chainId=${network.chainId}`}>
+              <Button variant="outline" className="w-full">
+                Customize Page <PaintbrushIcon className="h-4 w-4 ml-2" />
+              </Button>
             </Link>
           )}
         </CardHeader>

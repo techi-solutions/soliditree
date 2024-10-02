@@ -3,7 +3,7 @@ import { NETWORKS } from "@/constants/networks";
 import { ContractPage, ContractPagesService } from "@/services/contractPages";
 import IPFSService from "@/services/ipfs";
 import { Suspense } from "react";
-import Container from "./container";
+import Container from "@/components/Contract";
 import { detectPageIdType } from "@/utils/pages";
 import { redirect } from "next/navigation";
 

@@ -31,6 +31,7 @@ import {
   GitPullRequestCreateArrow,
   HeartIcon,
   Loader2,
+  PaintbrushIcon,
   PencilIcon,
   ShareIcon,
   StarIcon,
@@ -75,23 +76,25 @@ import { extractFunctionNameFromId } from "@/utils/functions";
 import { ClipboardItem, ClipboardService } from "@/services/clipboard";
 
 export default function Container({
+  explore = false,
   pageId,
-  usesReservedName,
-  owner,
-  contractOwner,
+  usesReservedName = false,
+  owner = "",
+  contractOwner = "",
   contractData,
   network,
   destroyPage,
-  shortNameThreshold,
+  shortNameThreshold = 6,
 }: {
+  explore?: boolean;
   pageId: string;
-  usesReservedName: boolean;
-  owner: string;
-  contractOwner: string;
+  usesReservedName?: boolean;
+  owner?: string;
+  contractOwner?: string;
   contractData: ContractPage;
   network: Network;
-  destroyPage: (page: ContractPage) => Promise<void>;
-  shortNameThreshold: number;
+  destroyPage?: (page: ContractPage) => Promise<void>;
+  shortNameThreshold?: number;
 }) {
   const clipboard = useRef(new ClipboardService(pageId)).current;
   const [clipboardItems, setClipboardItems] = useState<ClipboardItem[]>([]);
@@ -333,6 +336,10 @@ export default function Container({
   >("idle");
 
   const handleDestroyPage = async () => {
+    if (!destroyPage) {
+      return;
+    }
+
     try {
       setDestroyStatus("approval");
       await ContractPagesDestroyPage(pageId, () => {
@@ -696,6 +703,17 @@ export default function Container({
             <Button onClick={handleEditPage}>
               Edit <PencilIcon className="h-4 w-4 ml-2" />
             </Button>
+          </div>
+        </div>
+      )}
+      {explore && !usesReservedName && (
+        <div className="z-50 fixed bottom-0 left-0 right-0 bg-white p-4 shadow-md">
+          <div className="flex flex-col items-center justify-between container mx-auto max-w-2xl">
+            <Link href={`/contract/${pageId}/save?chainId=${network.chainId}`}>
+              <Button type="submit" className="w-full">
+                Customize Page <PaintbrushIcon className="h-4 w-4 ml-2" />
+              </Button>
+            </Link>
           </div>
         </div>
       )}

@@ -60,40 +60,43 @@ export class ScanService {
     private readonly proxyContractService: ProxyContractService
   ) {}
 
-  async getContractABI(): Promise<ExtendedAbi> {
+  async getContractABI(): Promise<[string, ExtendedAbi]> {
     const address = await this.proxyContractService.getImplementationAddress();
     const response = await fetch(
       `${this.baseUrl}?module=contract&action=getabi&address=${address}&apikey=${this.apiKey}`
     );
     const data = await response.json();
     if (data.message !== "OK") {
-      return [];
+      return [address, []];
     }
 
     const items: Abi = JSON.parse(data.result);
 
-    return items
-      .filter((v) => v.type === "function")
-      .map((v) => ({
-        ...v,
-        id: `${v.name}(${v.inputs.reduce(
-          (acc, input, i) =>
-            i === 0
-              ? `${acc}${input.name} ${input.type}`
-              : `${acc},${input.name} ${input.type}`,
-          ""
-        )})`,
-        signature: keccak256(
-          toBytes(
-            `${v.name}(${v.inputs.reduce(
-              (acc, input, i) =>
-                i === 0 ? `${acc}${input.type}` : `${acc},${input.type}`,
-              ""
-            )})`
-          )
-        ),
-        selected: false,
-      }));
+    return [
+      address,
+      items
+        .filter((v) => v.type === "function")
+        .map((v) => ({
+          ...v,
+          id: `${v.name}(${v.inputs.reduce(
+            (acc, input, i) =>
+              i === 0
+                ? `${acc}${input.name} ${input.type}`
+                : `${acc},${input.name} ${input.type}`,
+            ""
+          )})`,
+          signature: keccak256(
+            toBytes(
+              `${v.name}(${v.inputs.reduce(
+                (acc, input, i) =>
+                  i === 0 ? `${acc}${input.type}` : `${acc},${input.type}`,
+                ""
+              )})`
+            )
+          ),
+          selected: false,
+        })),
+    ];
   }
 
   async getContractDetails(address: string): Promise<ContractData | null> {

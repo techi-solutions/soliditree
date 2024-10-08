@@ -43,9 +43,9 @@ export default async function Page({
     proxyContractService
   );
 
-  const abi = await scan.getContractABI();
+  const [implementationAddress, abi] = await scan.getContractABI();
 
-  const details = await scan.getContractDetails(params.contractAddress);
+  const details = await scan.getContractDetails(implementationAddress);
   console.log(details);
   if (!details) {
     return (

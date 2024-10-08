@@ -90,7 +90,8 @@ export default async function NewContractPage({
     proxyContractService
   );
 
-  const abi = await scan.getContractABI();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const [_, abi] = await scan.getContractABI();
 
   const exists = abi.length > 0;
 

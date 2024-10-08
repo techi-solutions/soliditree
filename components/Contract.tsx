@@ -189,8 +189,12 @@ export default function Container({
     } catch (error) {
       console.error(error);
       setTxStatus("error");
-      setTxHash(null);
     }
+
+    setTimeout(() => {
+      setTxStatus("idle");
+      setTxHash(null);
+    }, 2000);
   };
 
   const handleSubmitReadableTx = async (
@@ -247,6 +251,11 @@ export default function Container({
     } catch (error) {
       console.error(error);
       setTxStatus("error");
+
+      setTimeout(() => {
+        setResult(null);
+        setTxStatus("idle");
+      }, 2000);
     }
   };
 
